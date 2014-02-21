@@ -17,6 +17,6 @@ public class Runner {
 
         CommandBus commandBus = new Eventor(classes);
 
-        commandBus.publish(new AskToJoin("my@gmail.com", "Joe", "1234"));
+        commandBus.submit(new AskToJoin("my@gmail.com", "Joe", "1234"));
     }
 }
