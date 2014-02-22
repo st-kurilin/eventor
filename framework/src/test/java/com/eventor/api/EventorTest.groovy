@@ -25,6 +25,19 @@ class EventorTest extends Specification {
         eb.publish(new SubmitResult("Math-01", "Bob", [1, 2, 42, 1, 3] as int[]));
         eb.publish(new SubmitResult("Math-01", "Poll", [42, 2, 42, 1, 3] as int[]));
         then:
-        instanceCreator.instancies.get(ExamStat.class).bestResult("Math-01") == 40
+        instanceCreator.instancies.get(ExamStat.class).bestResultForExam("Math-01") == 40
+    }
+
+    def "Command handlers can handle commands and produce events directly"() {
+        setup:
+        def instanceCreator = new SimpleInstanceCreator()
+        def eventor = new Eventor([Exam.class, ExamStat.class, StudentStat.class], instanceCreator)
+        def eb = instanceCreator.getInstanceOf(EventBus.class)
+        def ch = instanceCreator.getInstanceOf(ExamRegistrator.class)
+        ch.eventBus = eb
+        when:
+        ch.registerExam("Algo-2013")
+        then:
+        instanceCreator.instancies.get(ExamStat.class).allExams().contains("Algo-2013")
     }
 }

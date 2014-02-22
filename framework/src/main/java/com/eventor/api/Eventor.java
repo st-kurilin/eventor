@@ -10,15 +10,31 @@ public class Eventor implements CommandBus {
     private final Iterable<Class<?>> aggregates;
     private final Info info;
     private final EventBus eventBus;
+    private final CommandBus commandBus;
+    private final InstanceCreator instanceCreator;
 
     public Eventor(final Iterable<Class<?>> aggregates, final InstanceCreator instanceCreator) {
         this.aggregates = aggregates;
+        this.instanceCreator = instanceCreator;
         info = new ClassProcessor().apply(aggregates);
-        instanceCreator.getInstanceOf(SimpleEventBus.class);
-        eventBus = instanceCreator.getInstanceOf(SimpleEventBus.class);
+        createAllNeededInstancies(instanceCreator);
+        eventBus = createEventBus();
+        commandBus = createCommandBus();
+    }
+
+    private void createAllNeededInstancies(InstanceCreator instanceCreator) {
         for (MetaSubscriber each : info.subscribers) {
             instanceCreator.getInstanceOf(each.origClass);
         }
+    }
+
+    private CommandBus createCommandBus() {
+        CommandBus commandBus = instanceCreator.getInstanceOf(SimpleCommandBus.class);
+        return commandBus;
+    }
+
+    private EventBus createEventBus() {
+        final EventBus eventBus = instanceCreator.getInstanceOf(SimpleEventBus.class);
         eventBus.subscribe(new Listener() {
             @Override
             public void apply(Object event) {
@@ -73,6 +89,7 @@ public class Eventor implements CommandBus {
                 }
             }
         });
+        return eventBus;
     }
 
 
