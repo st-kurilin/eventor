@@ -2,14 +2,14 @@ package com.eventor.university;
 
 import com.eventor.api.EventBus;
 
-public class ExamRegistrator {
+public class CourseRegistrator {
     public EventBus eventBus;
 
     public void setEventBus(EventBus eventBus) {
         this.eventBus = eventBus;
     }
 
-    public void registerExam(String courseId) {
-        eventBus.publish(new ExamRegistered(courseId));
+    public void registerCourse(String courseId) {
+        eventBus.publish(new CourseRegistered(courseId));
     }
 }

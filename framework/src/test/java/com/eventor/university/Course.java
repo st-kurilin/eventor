@@ -10,7 +10,7 @@ public class Course {
 
     @EventHandler
     @Start
-    public void on(ExamRegistered evt) {
+    public void on(CourseRegistered evt) {
     }
 
     @CommandHandler
@@ -25,9 +25,9 @@ public class Course {
             }
         }
         if (rightAnswers == 0) {
-            return new FailedOnExamResultsSubmition(cmd.courseId, cmd.courseId);
+            return new FailedOnCourseResultsSubmition(cmd.courseId, cmd.courseId);
         }
-        return new ExamResultsSubmitted(cmd.courseId, cmd.courseId, rightAnswers * 20);
+        return new CourseResultsSubmitted(cmd.courseId, cmd.courseId, rightAnswers * 20);
     }
 
     @EventHandler

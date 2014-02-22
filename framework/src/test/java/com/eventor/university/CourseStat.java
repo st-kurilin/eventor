@@ -7,25 +7,25 @@ import java.util.Map;
 import java.util.Set;
 
 @EventListener
-public class ExamStat {
+public class CourseStat {
     private Map<String, Integer> results = new HashMap<String, Integer>();
 
 
-    public Set<String> allExams() {
+    public Set<String> allCourses() {
         return results.keySet();
     }
 
-    public int bestResultForExam(String courseId) {
+    public int bestResultForCourse(String courseId) {
         return results.get(courseId);
     }
 
     @EventListener
-    public void on(ExamRegistered evt) {
+    public void on(CourseRegistered evt) {
         results.put(evt.courseId, 0);
     }
 
     @EventListener
-    public void on(ExamResultsSubmitted evt) {
+    public void on(CourseResultsSubmitted evt) {
         results.put(evt.courseId, Math.max(results.get(evt.courseId), evt.result));
     }
 }

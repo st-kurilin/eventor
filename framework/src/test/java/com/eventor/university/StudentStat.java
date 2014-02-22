@@ -22,7 +22,7 @@ public class StudentStat {
     }
 
     @EventListener
-    public void on(ExamResultsSubmitted evt) {
+    public void on(CourseResultsSubmitted evt) {
         if (!coursesByStudent.containsKey(evt.studentId)) {
             coursesByStudent.put(evt.studentId, new HashSet<String>());
         }
