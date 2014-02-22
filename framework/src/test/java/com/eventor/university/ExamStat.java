@@ -15,17 +15,17 @@ public class ExamStat {
         return results.keySet();
     }
 
-    public int bestResultForExam(String examId) {
-        return results.get(examId);
+    public int bestResultForExam(String courseId) {
+        return results.get(courseId);
     }
 
     @EventListener
     public void on(ExamRegistered evt) {
-        results.put(evt.examId, 0);
+        results.put(evt.courseId, 0);
     }
 
     @EventListener
     public void on(ExamResultsSubmitted evt) {
-        results.put(evt.examId, Math.max(results.get(evt.examId), evt.result));
+        results.put(evt.courseId, Math.max(results.get(evt.courseId), evt.result));
     }
 }

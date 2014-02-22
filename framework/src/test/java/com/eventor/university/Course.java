@@ -6,7 +6,7 @@ import com.eventor.api.EventHandler;
 import com.eventor.api.Start;
 
 @Aggregate
-public class Exam {
+public class Course {
 
     @EventHandler
     @Start
@@ -25,9 +25,9 @@ public class Exam {
             }
         }
         if (rightAnswers == 0) {
-            return new FailedOnExamResultsSubmition(cmd.examId, cmd.examId);
+            return new FailedOnExamResultsSubmition(cmd.courseId, cmd.courseId);
         }
-        return new ExamResultsSubmitted(cmd.examId, cmd.examId, rightAnswers * 20);
+        return new ExamResultsSubmitted(cmd.courseId, cmd.courseId, rightAnswers * 20);
     }
 
     @EventHandler

@@ -1,12 +1,12 @@
 package com.eventor.university;
 
 public class SubmitResult {
-    String examId;
+    String courseId;
     String studentId;
     int[] answers;
 
-    public SubmitResult(String examId, String studentId, int[] answers) {
-        this.examId = examId;
+    public SubmitResult(String courseId, String studentId, int[] answers) {
+        this.courseId = courseId;
         this.studentId = studentId;
         this.answers = answers;
     }

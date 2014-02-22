@@ -9,7 +9,7 @@ public class ExamRegistrator {
         this.eventBus = eventBus;
     }
 
-    public void registerExam(String examId) {
-        eventBus.publish(new ExamRegistered(examId));
+    public void registerExam(String courseId) {
+        eventBus.publish(new ExamRegistered(courseId));
     }
 }

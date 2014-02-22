@@ -7,18 +7,18 @@ class EventorTest extends Specification {
     def "Event should produce aggregates"() {
         setup:
         def instanceCreator = new SimpleInstanceCreator()
-        def eventor = new Eventor([Exam.class, ExamStat.class, StudentStat.class], instanceCreator)
+        def eventor = new Eventor([Course.class, ExamStat.class, StudentStat.class], instanceCreator)
         def eb = instanceCreator.getInstanceOf(EventBus.class)
         when:
         eb.publish(new ExamRegistered("Math-01"));
         then:
-        instanceCreator.instancies.containsKey(Exam.class)
+        instanceCreator.instancies.containsKey(Course.class)
     }
 
     def "Event listeners should receive messages from aggregates"() {
         setup:
         def instanceCreator = new SimpleInstanceCreator()
-        def eventor = new Eventor([Exam.class, ExamStat.class, StudentStat.class], instanceCreator)
+        def eventor = new Eventor([Course.class, ExamStat.class, StudentStat.class], instanceCreator)
         def eb = instanceCreator.getInstanceOf(EventBus.class)
         when:
         eb.publish(new ExamRegistered("Math-01"));
@@ -31,7 +31,7 @@ class EventorTest extends Specification {
     def "Command handlers can handle commands and produce events directly"() {
         setup:
         def instanceCreator = new SimpleInstanceCreator()
-        def eventor = new Eventor([Exam.class, ExamStat.class, StudentStat.class], instanceCreator)
+        def eventor = new Eventor([Course.class, ExamStat.class, StudentStat.class], instanceCreator)
         def eb = instanceCreator.getInstanceOf(EventBus.class)
         def ch = instanceCreator.getInstanceOf(ExamRegistrator.class)
         ch.eventBus = eb

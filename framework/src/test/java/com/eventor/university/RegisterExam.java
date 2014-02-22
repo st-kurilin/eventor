@@ -1,9 +1,9 @@
 package com.eventor.university;
 
 public class RegisterExam {
-    public final String examId;
+    public final String courseId;
 
-    public RegisterExam(String examId) {
-        this.examId = examId;
+    public RegisterExam(String courseId) {
+        this.courseId = courseId;
     }
 }

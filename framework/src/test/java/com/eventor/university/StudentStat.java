@@ -11,11 +11,11 @@ import static java.util.Collections.emptySet;
 
 @EventListener
 public class StudentStat {
-    Map<String, Set<String>> examsByStudent = new HashMap<String, Set<String>>();
+    Map<String, Set<String>> coursesByStudent = new HashMap<String, Set<String>>();
 
-    public Set<String> examsAttempted(String studentId) {
-        if (examsByStudent.containsKey(studentId)) {
-            return examsByStudent.get(studentId);
+    public Set<String> coursesAttempted(String studentId) {
+        if (coursesByStudent.containsKey(studentId)) {
+            return coursesByStudent.get(studentId);
         } else {
             return emptySet();
         }
@@ -23,9 +23,9 @@ public class StudentStat {
 
     @EventListener
     public void on(ExamResultsSubmitted evt) {
-        if (!examsByStudent.containsKey(evt.studentId)) {
-            examsByStudent.put(evt.studentId, new HashSet<String>());
+        if (!coursesByStudent.containsKey(evt.studentId)) {
+            coursesByStudent.put(evt.studentId, new HashSet<String>());
         }
-        examsByStudent.get(evt.studentId).add(evt.examId);
+        coursesByStudent.get(evt.studentId).add(evt.courseId);
     }
 }
