@@ -1,6 +1,6 @@
 package com.eventor.university;
 
-import com.eventor.api.EventListener;
+import com.eventor.api.annotations.EventListener;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package com.eventor.api;
+package com.eventor.api.annotations;
 
 import java.lang.annotation.*;
 
@@ -6,6 +6,5 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 @Inherited
-public @interface EventHandler {
-    String idField() default "";
+public @interface Start {
 }

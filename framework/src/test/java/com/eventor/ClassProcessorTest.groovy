@@ -1,5 +1,6 @@
-package com.eventor.internal.reflection
+package com.eventor
 
+import com.eventor.internal.reflection.ClassProcessor
 import com.eventor.university.Course
 import org.junit.runner.RunWith
 import org.spockframework.runtime.Sputnik

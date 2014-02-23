@@ -1,4 +1,4 @@
-package com.eventor.api;
+package com.eventor.internal;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;

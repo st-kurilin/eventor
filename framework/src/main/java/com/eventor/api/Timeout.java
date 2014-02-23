@@ -2,7 +2,7 @@ package com.eventor.api;
 
 import java.util.concurrent.TimeUnit;
 
-public class Timeout {
+public final class Timeout {
     public final long duration;
     public final TimeUnit unit;
     public final Object timeoutEvent;

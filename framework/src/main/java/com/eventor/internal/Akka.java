@@ -1,4 +1,4 @@
-package com.eventor.impl;
+package com.eventor.internal;
 
 import akka.actor.*;
 import akka.event.Logging;

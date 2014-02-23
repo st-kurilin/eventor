@@ -1,6 +1,8 @@
-package com.eventor.api;
+package com.eventor;
 
-import com.eventor.impl.Akka;
+import com.eventor.api.*;
+import com.eventor.internal.Akka;
+import com.eventor.internal.Collections3;
 import com.eventor.internal.meta.Info;
 import com.eventor.internal.meta.MetaAggregate;
 import com.eventor.internal.meta.MetaHandler;

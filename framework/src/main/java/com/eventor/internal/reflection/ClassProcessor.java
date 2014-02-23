@@ -1,6 +1,6 @@
 package com.eventor.internal.reflection;
 
-import com.eventor.api.*;
+import com.eventor.api.annotations.*;
 import com.eventor.internal.meta.Info;
 import com.eventor.internal.meta.MetaAggregate;
 import com.eventor.internal.meta.MetaHandler;

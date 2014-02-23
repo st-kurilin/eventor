@@ -1,4 +1,4 @@
-package com.eventor.api;
+package com.eventor.api.annotations;
 
 import java.lang.annotation.*;
 

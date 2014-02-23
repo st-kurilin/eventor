@@ -1,6 +1,6 @@
 package com.eventor.internal.meta;
 
-import com.eventor.api.Id;
+import com.eventor.api.annotations.Id;
 
 import java.lang.reflect.Field;
 import java.util.Set;

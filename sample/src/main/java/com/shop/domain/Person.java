@@ -1,9 +1,9 @@
 package com.shop.domain;
 
-import com.eventor.api.Aggregate;
-import com.eventor.api.CommandHandler;
-import com.eventor.api.EventHandler;
 import com.eventor.api.IdGenerator;
+import com.eventor.api.annotations.Aggregate;
+import com.eventor.api.annotations.CommandHandler;
+import com.eventor.api.annotations.EventHandler;
 import com.shop.api.Money;
 import com.shop.api.ecom.CancelOrder;
 import com.shop.api.ecom.OrderCanceled;

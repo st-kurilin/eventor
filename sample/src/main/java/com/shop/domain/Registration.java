@@ -1,6 +1,9 @@
 package com.shop.domain;
 
-import com.eventor.api.*;
+import com.eventor.api.CommandBus;
+import com.eventor.api.EventBus;
+import com.eventor.api.Timeout;
+import com.eventor.api.annotations.*;
 import com.shop.api.registration.AskToJoin;
 import com.shop.api.registration.PersonRegistered;
 import com.shop.api.registration.VerifyEmail;

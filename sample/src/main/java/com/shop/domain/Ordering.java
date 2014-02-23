@@ -1,6 +1,11 @@
 package com.shop.domain;
 
-import com.eventor.api.*;
+import com.eventor.api.IdGenerator;
+import com.eventor.api.Timeout;
+import com.eventor.api.annotations.EventHandler;
+import com.eventor.api.annotations.Key;
+import com.eventor.api.annotations.Keys;
+import com.eventor.api.annotations.Saga;
 import com.shop.api.ecom.OrderCanceled;
 import com.shop.api.ecom.OrderPlaced;
 import com.shop.api.money.Charge;

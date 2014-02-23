@@ -1,10 +1,10 @@
-package com.eventor.api;
+package com.eventor.api.annotations;
 
 import java.lang.annotation.*;
 
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ElementType.FIELD})
 @Inherited
-public @interface Start {
+public @interface Id {
 }

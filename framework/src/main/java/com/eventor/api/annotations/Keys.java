@@ -1,4 +1,4 @@
-package com.eventor.api;
+package com.eventor.api.annotations;
 
 
 public @interface Keys {

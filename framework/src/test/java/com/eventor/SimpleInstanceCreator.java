@@ -1,4 +1,6 @@
-package com.eventor.api;
+package com.eventor;
+
+import com.eventor.api.InstanceCreator;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,4 +1,6 @@
-package com.eventor.api;
+package com.eventor.impl;
+
+import com.eventor.api.CommandBus;
 
 public class SimpleCommandBus implements CommandBus {
     @Override

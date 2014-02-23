@@ -1,9 +1,9 @@
 package com.shop.app;
 
-import com.eventor.api.Aggregate;
 import com.eventor.api.CommandBus;
-import com.eventor.api.EventListener;
-import com.eventor.api.Saga;
+import com.eventor.api.annotations.Aggregate;
+import com.eventor.api.annotations.EventListener;
+import com.eventor.api.annotations.Saga;
 import com.google.common.collect.ImmutableSet;
 import com.shop.api.registration.AskToJoin;
 import org.reflections.Reflections;

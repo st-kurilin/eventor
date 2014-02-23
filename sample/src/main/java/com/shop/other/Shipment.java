@@ -1,7 +1,7 @@
 package com.shop.other;
 
-import com.eventor.api.EventHandler;
-import com.eventor.api.EventListener;
+import com.eventor.api.annotations.EventHandler;
+import com.eventor.api.annotations.EventListener;
 import com.shop.api.shipment.Send;
 
 @EventListener
