@@ -9,7 +9,7 @@ repositories {
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile "com.typesafe.akka:akka-actor_2.10:2.2.3"
     groovy("org.codehaus.groovy:groovy-all:1.7.5")
     testCompile "org.spockframework:spock-core:0.6-groovy-1.7"
 }

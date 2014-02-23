@@ -14,6 +14,7 @@ public class SimpleInstanceCreator implements InstanceCreator {
                     return (T) instancies.get(each);
                 }
             }
+            System.out.println("Create instance of " + clazz.getSimpleName());
             T newInstance = clazz.newInstance();
             instancies.put(clazz, newInstance);
             return newInstance;
@@ -22,5 +23,10 @@ public class SimpleInstanceCreator implements InstanceCreator {
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public <T> void putInstance(Class<T> clazz, T obj) {
+        instancies.put(clazz, obj);
     }
 }
