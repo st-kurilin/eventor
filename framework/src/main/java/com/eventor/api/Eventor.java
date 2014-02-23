@@ -26,25 +26,31 @@ public class Eventor implements CommandBus {
         instanceCreator.putInstance(EventBus.class, eventBus);
     }
 
+    private EventBus createEventBus() {
+        ArrayList<Listener> eventListeners = new ArrayList<Listener>();
+        for (final MetaAggregate eachMetaAggregate : info.aggregates) {
+            log.info("Register aggregate {} as event listener", eachMetaAggregate.origClass.getSimpleName());
+            eventListeners.add(aggregateAsListener(eachMetaAggregate));
+        }
+        for (final MetaSubscriber each : info.subscribers) {
+            log.info("Register event listener {}", each.origClass.getSimpleName());
+            eventListeners.add(eventListenerAsListener(each));
+        }
+        final Invokable router = akka.createBroadcaster(eventListeners);
+        return new EventBus() {
+            @Override
+            public void publish(Object event) {
+                log.info("Published to bus {}", event);
+                router.invoke(event, null);
+            }
+        };
+    }
+
     private CommandBus createCommandBus() {
         ArrayList<Listener> commandHandlers = new ArrayList<Listener>();
         for (final MetaAggregate eachMetaAggregate : info.aggregates) {
             log.info("Register aggregate {} as command handler", eachMetaAggregate.origClass.getSimpleName());
-            commandHandlers.add(new Listener() {
-                @Override
-                public void apply(Object event) {
-                    log.info("Command {} will be handled by aggregates", event);
-                    for (MetaHandler eachMetaHandler : eachMetaAggregate.commandHandlers) {
-                        if (eachMetaHandler.expected.equals(event.getClass())) {
-                            Object aggregate = instanceCreator.getInstanceOf(eachMetaAggregate.origClass);
-                            Iterable<Object> events = Collections3.toIterable(eachMetaHandler.execute(aggregate, event));
-                            for (Object eachEvent : events) {
-                                eventBus.publish(eachEvent);
-                            }
-                        }
-                    }
-                }
-            });
+            commandHandlers.add(aggregateAsCommandHandlerAsListener(eachMetaAggregate));
         }
         final Invokable router = akka.createBroadcaster(commandHandlers);
 
@@ -58,42 +64,16 @@ public class Eventor implements CommandBus {
         return cb;
     }
 
-    private EventBus createEventBus() {
-        ArrayList<Listener> eventListeners = new ArrayList<Listener>();
-        for (final MetaAggregate eachMetaAggregate : info.aggregates) {
-            log.info("Register aggregate {} as event listener", eachMetaAggregate.origClass.getSimpleName());
-            eventListeners.add(new Listener() {
-                @Override
-                public void apply(Object event) {
-                    log.info("Event {} will be handled by aggregates", event);
-                    handleEventByAggregate(eachMetaAggregate, event);
+    private void handleCmdByAggregate(MetaAggregate eachMetaAggregate, Object cmd) {
+        for (MetaHandler eachMetaHandler : eachMetaAggregate.commandHandlers) {
+            if (eachMetaHandler.expected.equals(cmd.getClass())) {
+                Object aggregate = instanceCreator.getInstanceOf(eachMetaAggregate.origClass);
+                Iterable<Object> events = Collections3.toIterable(eachMetaHandler.execute(aggregate, cmd));
+                for (Object eachEvent : events) {
+                    eventBus.publish(eachEvent);
                 }
-            });
-        }
-        for (final MetaSubscriber each : info.subscribers) {
-            log.info("Register event listener {}", each.origClass.getSimpleName());
-            eventListeners.add(new Listener() {
-                @Override
-                public void apply(Object event) {
-                    log.info("Event {} will be handled by event listener {}", event, each.origClass.getSimpleName());
-                    handleEventByEvenHandler(each, event);
-                }
-            });
-        }
-        final Invokable router = akka.createBroadcaster(eventListeners);
-
-        return new EventBus() {
-            @Override
-            public void publish(Object event) {
-                log.info("Published to bus {}", event);
-                router.invoke(event, null);
             }
-
-            @Override
-            public void subscribe(Listener subscriber) {
-                throw new UnsupportedOperationException();
-            }
-        };
+        }
     }
 
     private void handleEventByEvenHandler(MetaSubscriber eventListener, Object event) {
@@ -106,22 +86,44 @@ public class Eventor implements CommandBus {
 
     private void handleEventByAggregate(MetaAggregate eachMetaAggregate, Object event) {
         for (MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
-            if (eachMetaHandler.expected.equals(event.getClass()) && eachMetaHandler.alwaysStart) {
+            if (eachMetaHandler.expected.equals(event.getClass())) {
                 Object aggregate = instanceCreator.getInstanceOf(eachMetaAggregate.origClass);
                 Iterable<Object> events = Collections3.toIterable(eachMetaHandler.execute(aggregate, event));
                 for (Object eachEvent : events) {
                     eventBus.publish(eachEvent);
                 }
-            } else {
-                if (eachMetaHandler.expected.equals(event.getClass())) {
-                    Object aggregate = instanceCreator.getInstanceOf(eachMetaAggregate.origClass);
-                    Iterable<Object> events = Collections3.toIterable(eachMetaHandler.execute(aggregate, event));
-                    for (Object eachEvent : events) {
-                        eventBus.publish(eachEvent);
-                    }
-                }
             }
         }
+    }
+
+    private Listener aggregateAsCommandHandlerAsListener(final MetaAggregate eachMetaAggregate) {
+        return new Listener() {
+            @Override
+            public void apply(Object cmd) {
+                log.info("Command {} will be handled by aggregates", cmd);
+                handleCmdByAggregate(eachMetaAggregate, cmd);
+            }
+        };
+    }
+
+    private Listener eventListenerAsListener(final MetaSubscriber each) {
+        return new Listener() {
+            @Override
+            public void apply(Object event) {
+                log.info("Event {} will be handled by event listener {}", event, each.origClass.getSimpleName());
+                handleEventByEvenHandler(each, event);
+            }
+        };
+    }
+
+    private Listener aggregateAsListener(final MetaAggregate eachMetaAggregate) {
+        return new Listener() {
+            @Override
+            public void apply(Object event) {
+                log.info("Event {} will be handled by aggregates", event);
+                handleEventByAggregate(eachMetaAggregate, event);
+            }
+        };
     }
 
     @Override

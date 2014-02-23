@@ -12,9 +12,4 @@ public class SimpleEventBus implements EventBus {
             each.apply(event);
         }
     }
-
-    @Override
-    public void subscribe(Listener subscriber) {
-        subscribers.add(subscriber);
-    }
 }
