@@ -1,20 +1,21 @@
 package com.eventor.university;
 
-import com.eventor.api.Aggregate;
-import com.eventor.api.CommandHandler;
-import com.eventor.api.EventHandler;
-import com.eventor.api.Start;
+import com.eventor.api.*;
 
 @Aggregate
 public class Course {
+    @Id
+    private String id;
+    private boolean solved;
 
     @EventHandler
     @Start
     public void on(CourseRegistered evt) {
+        id = evt.courseId;
     }
 
     @CommandHandler
-    public Object on(SubmitResult cmd) {
+    public Object on(@IdIn("courseId") SubmitResult cmd) {
         if (cmd.answers.length != 5) {
             throw new RuntimeException("Validation failed");
         }
@@ -25,9 +26,14 @@ public class Course {
             }
         }
         if (rightAnswers == 0) {
-            return new FailedOnCourseResultsSubmition(cmd.courseId, cmd.courseId);
+            return new FailedOnCourseResultsSubmition(cmd.courseId, cmd.studentId);
         }
-        return new CourseResultsSubmitted(cmd.courseId, cmd.courseId, rightAnswers * 20);
+        if (solved) {
+            return new CourseResultsSubmitted(cmd.courseId, cmd.studentId, rightAnswers * 20);
+        } else {
+            solved = true;
+            return new CourseResultsSubmitted(cmd.courseId, cmd.studentId, rightAnswers * 20 + 20);
+        }
     }
 
     @EventHandler

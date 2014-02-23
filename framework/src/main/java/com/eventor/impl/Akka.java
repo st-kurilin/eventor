@@ -35,7 +35,11 @@ public class Akka {
         };
     }
 
-    public ActorRef createActor(Listener listener) {
+    public Invokable createInvokable(Listener listener) {
+        return wrap(createActor(listener));
+    }
+
+    private ActorRef createActor(Listener listener) {
         return system.actorOf(Props.create(new ActorFromListenerCreator(listener)));
     }
 

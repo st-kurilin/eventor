@@ -7,13 +7,8 @@ public class SimpleInstanceCreator implements InstanceCreator {
     public Map<Class<?>, Object> instancies = new HashMap<Class<?>, Object>();
 
     @Override
-    public <T> T getInstanceOf(Class<T> clazz) {
+    public <T> T newInstanceOf(Class<T> clazz) {
         try {
-            for (Class<?> each : instancies.keySet()) {
-                if (clazz.isAssignableFrom(each)) {
-                    return (T) instancies.get(each);
-                }
-            }
             System.out.println("Create instance of " + clazz.getSimpleName());
             T newInstance = clazz.newInstance();
             instancies.put(clazz, newInstance);
@@ -26,7 +21,17 @@ public class SimpleInstanceCreator implements InstanceCreator {
     }
 
     @Override
-    public <T> void putInstance(Class<T> clazz, T obj) {
+    public synchronized <T> T getInstanceOf(Class<T> clazz) {
+        for (Class<?> each : instancies.keySet()) {
+            if (clazz.isAssignableFrom(each)) {
+                return (T) instancies.get(each);
+            }
+        }
+        return newInstanceOf(clazz);
+    }
+
+    @Override
+    public synchronized <T> void putInstance(Class<T> clazz, T obj) {
         instancies.put(clazz, obj);
     }
 }

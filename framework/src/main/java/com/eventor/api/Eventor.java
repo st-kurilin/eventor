@@ -8,6 +8,8 @@ import com.eventor.internal.meta.MetaSubscriber;
 import com.eventor.internal.reflection.ClassProcessor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Eventor implements CommandBus {
     private final Info info;
@@ -15,6 +17,8 @@ public class Eventor implements CommandBus {
     private final CommandBus commandBus;
     private final InstanceCreator instanceCreator;
     private final Akka akka = new Akka();
+    private final Map<Object, Object> aggregates = new HashMap<Object, Object>();
+
     private final Log log = akka.createLog(this);
 
     public Eventor(final Iterable<Class<?>> aggregates, final InstanceCreator instanceCreator) {
@@ -67,11 +71,26 @@ public class Eventor implements CommandBus {
     private void handleCmdByAggregate(MetaAggregate eachMetaAggregate, Object cmd) {
         for (MetaHandler eachMetaHandler : eachMetaAggregate.commandHandlers) {
             if (eachMetaHandler.expected.equals(cmd.getClass())) {
-                Object aggregate = instanceCreator.getInstanceOf(eachMetaAggregate.origClass);
-                Iterable<Object> events = Collections3.toIterable(eachMetaHandler.execute(aggregate, cmd));
-                for (Object eachEvent : events) {
-                    eventBus.publish(eachEvent);
+                Object aggregateId = eachMetaHandler.extractId(cmd);
+                if (aggregates.containsKey(aggregateId)) {
+                    Object aggregate = aggregates.get(aggregateId);
+                    Iterable<Object> events = Collections3.toIterable(eachMetaHandler.execute(aggregate, cmd));
+                    for (Object eachEvent : events) {
+                        handleEventByAggregate(aggregate, eachEvent);
+                    }
+                    for (Object eachEvent : events) {
+                        eventBus.publish(eachEvent);
+                    }
                 }
+            }
+        }
+    }
+
+    private void handleEventByAggregate(Object aggregate, Object event) {
+        Class<?> actualClass = aggregate.getClass();
+        for (MetaAggregate metaAggregate : info.aggregates) {
+            if (metaAggregate.origClass.equals(actualClass)) {
+                handleEventByAggregate(metaAggregate, event);
             }
         }
     }
@@ -84,16 +103,24 @@ public class Eventor implements CommandBus {
         }
     }
 
-    private void handleEventByAggregate(MetaAggregate eachMetaAggregate, Object event) {
-        for (MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
+    private void handleEventByAggregate(final MetaAggregate eachMetaAggregate, final Object event) {
+        for (final MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
             if (eachMetaHandler.expected.equals(event.getClass())) {
-                Object aggregate = instanceCreator.getInstanceOf(eachMetaAggregate.origClass);
-                Iterable<Object> events = Collections3.toIterable(eachMetaHandler.execute(aggregate, event));
-                for (Object eachEvent : events) {
-                    eventBus.publish(eachEvent);
+                if (eachMetaHandler.alwaysStart) {
+                    Object aggregate = instanceCreator.newInstanceOf(eachMetaAggregate.origClass);
+                    handleEventByAggregate(aggregate, eachMetaHandler, event);
+                    aggregates.put(eachMetaAggregate.retrieveId(aggregate), aggregate);
+                }
+                for (Object aggregate : aggregates.values()) {
+                    handleEventByAggregate(aggregate, eachMetaHandler, event);
                 }
             }
         }
+    }
+
+    private void handleEventByAggregate(Object aggregate, MetaHandler eachMetaHandler, Object event) {
+        Object res = eachMetaHandler.execute(aggregate, event);
+        if (res != null) throw new RuntimeException("Void expected");
     }
 
     private Listener aggregateAsCommandHandlerAsListener(final MetaAggregate eachMetaAggregate) {

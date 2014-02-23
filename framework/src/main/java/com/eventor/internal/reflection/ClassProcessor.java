@@ -33,7 +33,7 @@ public class ClassProcessor {
         for (Method each : clazz.getMethods()) {
             EventListener el = each.getAnnotation(EventListener.class);
             if (el != null) {
-                eventHandlers.add(new MetaHandler(getSingleParamType(each), null, false, false));
+                eventHandlers.add(new MetaHandler(getSingleParamType(each), null, false, false, null));
             }
         }
         return new MetaSubscriber(clazz, null, eventHandlers);
@@ -46,12 +46,22 @@ public class ClassProcessor {
             EventHandler eh = each.getAnnotation(EventHandler.class);
             if (eh != null) {
                 eventHandlers.add(new MetaHandler(getSingleParamType(each), null, false,
-                        each.getAnnotation(Start.class) != null));
+                        each.getAnnotation(Start.class) != null, null));
             }
             CommandHandler ch = each.getAnnotation(CommandHandler.class);
             if (ch != null) {
+                Class<?>[] params = each.getParameterTypes();
+                if (params.length != 1) {
+                    throw new RuntimeException("Only one param expected");
+                }
+                String idField = null;
+                for (Annotation parameterAnnotation : each.getParameterAnnotations()[0]) {
+                    if (parameterAnnotation.annotationType().equals(IdIn.class)) {
+                        idField = ((IdIn) parameterAnnotation).value();
+                    }
+                }
                 commandHandlers.add(new MetaHandler(getSingleParamType(each), null, false,
-                        each.getAnnotation(Start.class) != null));
+                        each.getAnnotation(Start.class) != null, idField));
             }
         }
         return new MetaAggregate(aggregateClass, commandHandlers, eventHandlers);
