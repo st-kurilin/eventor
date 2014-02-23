@@ -1,6 +1,9 @@
 package com.shop.app;
 
-import com.eventor.api.*;
+import com.eventor.api.Aggregate;
+import com.eventor.api.CommandBus;
+import com.eventor.api.EventListener;
+import com.eventor.api.Saga;
 import com.google.common.collect.ImmutableSet;
 import com.shop.api.registration.AskToJoin;
 import org.reflections.Reflections;
@@ -15,7 +18,7 @@ public class Runner {
                 .addAll(reflections.getTypesAnnotatedWith(Saga.class))
                 .addAll(reflections.getTypesAnnotatedWith(EventListener.class)).build();
 
-        CommandBus commandBus = new Eventor(classes);
+        CommandBus commandBus = null; //todo: init
 
         commandBus.submit(new AskToJoin("my@gmail.com", "Joe", "1234"));
     }

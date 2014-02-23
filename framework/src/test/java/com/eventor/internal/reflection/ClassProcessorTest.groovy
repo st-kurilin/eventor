@@ -17,7 +17,7 @@ class ClassProcessorTest extends Specification {
         info.aggregates.size() == 1
         def descr = info.aggregates.iterator().next()
         descr.origClass == Course.class
-        descr.eventHandlers.size() == 1
+        descr.eventHandlers.size() >= 1
         def eh = descr.eventHandlers.iterator().next()
         eh.expected == Object.class
     }
