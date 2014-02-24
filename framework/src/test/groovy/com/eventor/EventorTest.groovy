@@ -34,7 +34,7 @@ class EventorTest extends Specification {
         cb.submit(new SubmitResult("Math-01", "Poll", [42, 2, 42, 1, 3] as int[]))
         Thread.sleep(500)
         then:
-        instanceCreator.instancies.get(CourseStat.class).bestResultForCourse("Math-01") == 40
+        instanceCreator.getInstanceOf(CourseStat.class).bestResultForCourse("Math-01") == 40
     }
 
     def "Command handlers can handle commands and produce events directly"() {
@@ -48,7 +48,7 @@ class EventorTest extends Specification {
         ch.registerCourse("Algo-2013")
         Thread.sleep(500)
         then:
-        instanceCreator.instancies.get(CourseStat.class).allCourses().contains("Algo-2013")
+        instanceCreator.getInstanceOf(CourseStat.class).allCourses().contains("Algo-2013")
     }
 
     def "Aggregates maintain state between interactions"() {
@@ -65,8 +65,8 @@ class EventorTest extends Specification {
         cb.submit(new SubmitResult("Algo-2013", "Poll", [42, 42, 42, 42, 42] as int[]))
         Thread.sleep(500)
         then:
-        instanceCreator.instancies.get(Grades.class).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
-        instanceCreator.instancies.get(Grades.class).grade("Algo-2013", "Poll") == 100
+        instanceCreator.getInstanceOf(Grades.class).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
+        instanceCreator.getInstanceOf(Grades.class).grade("Algo-2013", "Poll") == 100
     }
 
     def "Aggregates have independent state"() {
@@ -84,7 +84,7 @@ class EventorTest extends Specification {
         cb.submit(new SubmitResult("Math-2013", "Poll", [42, 42, 42, 42, 42] as int[]))
         Thread.sleep(500)
         then:
-        instanceCreator.instancies.get(Grades.class).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
-        instanceCreator.instancies.get(Grades.class).grade("Math-2013", "Poll") == 120
+        instanceCreator.getInstanceOf(Grades.class).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
+        instanceCreator.getInstanceOf(Grades.class).grade("Math-2013", "Poll") == 120
     }
 }
