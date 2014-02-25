@@ -52,39 +52,36 @@ class EventorTest extends Specification {
     }
 
     def "Aggregates maintain state between interactions"() {
-        setup:
-        def instanceCreator = new SimpleInstanceCreator()
-        def eventor = new Eventor([Course, CourseStat, Grades], instanceCreator)
-        def eb = instanceCreator.getInstanceOf(EventBus)
-        def ch = instanceCreator.getInstanceOf(CourseRegistrator)
-        ch.eventBus = eb
-        def cb = instanceCreator.getInstanceOf(CommandBus)
         when:
         ch.registerCourse("Algo-2013")
         cb.submit(new SubmitResult("Algo-2013", "Bob", [42, 42, 42, 42, 42] as int[]))
         cb.submit(new SubmitResult("Algo-2013", "Poll", [42, 42, 42, 42, 42] as int[]))
-        Thread.sleep(500)
+        Thread.sleep(1000)
         then:
         instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
         instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Poll") == 100
     }
 
     def "Aggregates have independent state"() {
-        setup:
-        def instanceCreator = new SimpleInstanceCreator()
-        def eventor = new Eventor([Course, CourseStat, Grades], instanceCreator)
-        def eb = instanceCreator.getInstanceOf(EventBus)
-        def ch = instanceCreator.getInstanceOf(CourseRegistrator)
-        ch.eventBus = eb
-        def cb = instanceCreator.getInstanceOf(CommandBus)
         when:
         ch.registerCourse("Algo-2013")
         ch.registerCourse("Math-2013")
         cb.submit(new SubmitResult("Algo-2013", "Bob", [42, 42, 42, 42, 42] as int[]))
         cb.submit(new SubmitResult("Math-2013", "Poll", [42, 42, 42, 42, 42] as int[]))
-        Thread.sleep(500)
+        Thread.sleep(1000)
         then:
         instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
         instanceCreator.getInstanceOf(Grades).grade("Math-2013", "Poll") == 120
     }
+
+    def instanceCreator = new SimpleInstanceCreator()
+    def eventor = new Eventor([Course, CourseStat, Grades], instanceCreator)
+    def eb = instanceCreator.getInstanceOf(EventBus)
+    def ch = instanceCreator.getInstanceOf(CourseRegistrator)
+    def cb = instanceCreator.getInstanceOf(CommandBus)
+
+    def setup() {
+        ch.eventBus = eb
+    }
+
 }
