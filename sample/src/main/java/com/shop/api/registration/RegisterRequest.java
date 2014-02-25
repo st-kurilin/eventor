@@ -1,11 +1,11 @@
 package com.shop.api.registration;
 
-public class AskToJoin {
+public class RegisterRequest {
     public String email;
     public String name;
     public String password;
 
-    public AskToJoin(String email, String name, String password) {
+    public RegisterRequest(String email, String name, String password) {
         this.email = email;
         this.name = name;
         this.password = password;

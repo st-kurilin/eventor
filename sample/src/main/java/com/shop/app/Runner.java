@@ -5,7 +5,7 @@ import com.eventor.api.annotations.Aggregate;
 import com.eventor.api.annotations.EventListener;
 import com.eventor.api.annotations.Saga;
 import com.google.common.collect.ImmutableSet;
-import com.shop.api.registration.AskToJoin;
+import com.shop.api.registration.RegisterRequest;
 import org.reflections.Reflections;
 
 import java.util.Set;
@@ -20,6 +20,6 @@ public class Runner {
 
         CommandBus commandBus = null; //todo: init
 
-        commandBus.submit(new AskToJoin("my@gmail.com", "Joe", "1234"));
+        commandBus.submit(new RegisterRequest("my@gmail.com", "Joe", "1234"));
     }
 }
