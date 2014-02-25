@@ -3,10 +3,7 @@ package com.eventor;
 import com.eventor.api.*;
 import com.eventor.internal.Akka;
 import com.eventor.internal.Collections3;
-import com.eventor.internal.meta.Info;
-import com.eventor.internal.meta.MetaAggregate;
-import com.eventor.internal.meta.MetaHandler;
-import com.eventor.internal.meta.MetaSubscriber;
+import com.eventor.internal.meta.*;
 import com.eventor.internal.reflection.ClassProcessor;
 
 import java.util.ArrayList;
@@ -37,6 +34,10 @@ public class Eventor implements CommandBus {
         for (final MetaAggregate eachMetaAggregate : info.aggregates) {
             log.info("Register aggregate {} as event listener", eachMetaAggregate.origClass.getSimpleName());
             eventListeners.add(aggregateAsListener(eachMetaAggregate));
+        }
+        for (final MetaSaga eachMetaSaga : info.sagas) {
+            log.info("Register saga {} as event listener", eachMetaSaga.origClass.getSimpleName());
+            eventListeners.add(sagaAsListener(eachMetaSaga));
         }
         for (final MetaSubscriber each : info.subscribers) {
             log.info("Register event listener {}", each.origClass.getSimpleName());
@@ -120,6 +121,14 @@ public class Eventor implements CommandBus {
         }
     }
 
+    private void handleEventBySaga(final MetaSaga eachMetaSaga, final Object event) {
+        for (MetaHandler eachMetaHandler : eachMetaSaga.eventHandlers) {
+            if (eachMetaHandler.expected.equals(event.getClass())) {
+                eachMetaHandler.execute(instanceCreator.getInstanceOf(eachMetaSaga.origClass), event);
+            }
+        }
+    }
+
     private void handleEventByAggregate(Object aggregate, MetaHandler eachMetaHandler, Object event) {
         Object res = eachMetaHandler.execute(aggregate, event);
         if (res != null) throw new RuntimeException("Void expected");
@@ -151,6 +160,16 @@ public class Eventor implements CommandBus {
             public void apply(Object event) {
                 log.info("Event {} will be handled by aggregates", event);
                 handleEventByAggregate(eachMetaAggregate, event);
+            }
+        };
+    }
+
+    private Listener sagaAsListener(final MetaSaga eachMetaSaga) {
+        return new Listener() {
+            @Override
+            public void apply(Object event) {
+                log.info("Event {} will be handled by sagas", event);
+                handleEventBySaga(eachMetaSaga, event);
             }
         };
     }
