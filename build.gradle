@@ -1,11 +1,13 @@
+import java.nio.charset.Charset
+
 apply plugin: 'java'
 
 sourceCompatibility = 1.5
 version = '1.0'
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '1.8'
-  distributionUrl = 'http://services.gradle.org/distributions/gradle-1.8-all.zip'
+    gradleVersion = '1.8'
+    distributionUrl = 'http://services.gradle.org/distributions/gradle-1.8-all.zip'
 }
 
 repositories {
@@ -14,4 +16,27 @@ repositories {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+task generateReadme << {
+    def includePrefix = "@include "
+    def inps = new FileInputStream("README.template.md");
+    def inp = new BufferedReader(new InputStreamReader(inps, Charset.forName("UTF-8")));
+    PrintWriter out = new PrintWriter(new FileWriter("README.md"));
+    def line
+    while ((line = inp.readLine()) != null) {
+        if (line.startsWith(includePrefix)) {
+            def toIncludeIs = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(line.substring(includePrefix.length())),
+                            Charset.forName("UTF-8")));
+            while ((line = toIncludeIs.readLine()) != null) {
+                if (!line.startsWith("import ") && !line.startsWith("package ")) out.println "    " + line
+            }
+            toIncludeIs.close()
+        } else {
+            out.println line
+        }
+    }
+    out.close()
+    inp.close()
 }
