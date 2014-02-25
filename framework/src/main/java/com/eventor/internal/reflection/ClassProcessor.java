@@ -1,10 +1,7 @@
 package com.eventor.internal.reflection;
 
 import com.eventor.api.annotations.*;
-import com.eventor.internal.meta.Info;
-import com.eventor.internal.meta.MetaAggregate;
-import com.eventor.internal.meta.MetaHandler;
-import com.eventor.internal.meta.MetaSubscriber;
+import com.eventor.internal.meta.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -14,16 +11,19 @@ public class ClassProcessor {
     public Info apply(Iterable<Class<?>> classes) {
         HashSet<MetaAggregate> aggregates = new HashSet<MetaAggregate>();
         HashSet<MetaSubscriber> subscribers = new HashSet<MetaSubscriber>();
+        HashSet<MetaSaga> sagas = new HashSet<MetaSaga>();
         for (Class<?> each : classes) {
             if (classAnnotated(each, Aggregate.class)) {
                 aggregates.add(handleAggregate(each));
+            } else if (classAnnotated(each, Saga.class)) {
+                sagas.add(handleSaga(each));
             } else if (classAnnotated(each, EventListener.class)) {
                 subscribers.add(handleSubscriber(each));
             }
         }
         return new Info(
                 aggregates,
-                null,
+                sagas,
                 subscribers
         );
     }
@@ -65,6 +65,17 @@ public class ClassProcessor {
             }
         }
         return new MetaAggregate(aggregateClass, commandHandlers, eventHandlers);
+    }
+
+    private MetaSaga handleSaga(Class<?> sagaClass) {
+        HashSet<MetaHandler> eventHandlers = new HashSet<MetaHandler>();
+        for (Method each : sagaClass.getMethods()) {
+            EventHandler eh = each.getAnnotation(EventHandler.class);
+            if (eh != null) {
+                eventHandlers.add(new MetaHandler(getSingleParamType(each), null, false, false, null));
+            }
+        }
+        return new MetaSaga(sagaClass, eventHandlers, eventHandlers);
     }
 
     private Class<?> getSingleParamType(Method each) {

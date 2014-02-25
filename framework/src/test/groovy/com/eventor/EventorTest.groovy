@@ -87,4 +87,19 @@ class EventorTest extends Specification {
         instanceCreator.getInstanceOf(Grades.class).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
         instanceCreator.getInstanceOf(Grades.class).grade("Math-2013", "Poll") == 120
     }
+
+    def "Saga should handle event"() {
+        setup:
+        def courseId = "Algorithms"
+        def instanceCreator = new SimpleInstanceCreator()
+        def eventor = new Eventor([Course.class, CourseRegistration.class], instanceCreator)
+        def eb = instanceCreator.getInstanceOf(EventBus.class)
+        def ch = instanceCreator.getInstanceOf(CourseRegistrator.class)
+        ch.eventBus = eb
+        when:
+        ch.registerCourse(courseId)
+        Thread.sleep(500)
+        then:
+        instanceCreator.getInstanceOf(CourseRegistration.class).getCourseId() == courseId
+    }
 }
