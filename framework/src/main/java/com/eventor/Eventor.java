@@ -8,6 +8,8 @@ import com.eventor.internal.meta.Info;
 import com.eventor.internal.meta.MetaAggregate;
 import com.eventor.internal.meta.MetaHandler;
 import com.eventor.internal.meta.MetaSubscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -21,7 +23,7 @@ public class Eventor implements CommandBus {
     private final Akka akka = new Akka();
     private final Map<Object, Object> aggregates = new HashMap<Object, Object>();
 
-    private final Log log = akka.createLog(this);
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     public Eventor(final Iterable<Class<?>> aggregates, final InstanceCreator instanceCreator) {
         this.instanceCreator = instanceCreator;

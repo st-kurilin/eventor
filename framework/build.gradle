@@ -9,6 +9,7 @@ repositories {
 }
 
 dependencies {
+    compile "org.slf4j:slf4j-api:1.7.6"
     compile "com.typesafe.akka:akka-actor_2.10:2.2.3"
     groovy("org.codehaus.groovy:groovy-all:1.7.5")
     testCompile "org.spockframework:spock-core:0.6-groovy-1.7"
