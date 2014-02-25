@@ -1,6 +1,4 @@
-package com.eventor.internal.reflection;
-
-import com.eventor.internal.EventorCollections;
+package com.eventor.internal;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;

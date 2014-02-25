@@ -1,4 +1,4 @@
-package com.eventor.internal.reflection;
+package com.eventor.internal;
 
 import com.eventor.api.annotations.*;
 import com.eventor.internal.meta.*;

@@ -2,12 +2,12 @@ package com.eventor;
 
 import com.eventor.api.*;
 import com.eventor.internal.Akka;
+import com.eventor.internal.ClassProcessor;
 import com.eventor.internal.EventorCollections;
 import com.eventor.internal.meta.Info;
 import com.eventor.internal.meta.MetaAggregate;
 import com.eventor.internal.meta.MetaHandler;
 import com.eventor.internal.meta.MetaSubscriber;
-import com.eventor.internal.reflection.ClassProcessor;
 
 import java.util.*;
 

@@ -1,11 +1,11 @@
 package com.eventor.internal.meta;
 
-import com.eventor.internal.reflection.EventorReflections;
+import com.eventor.internal.EventorReflections;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
 
-import static com.eventor.internal.reflection.EventorReflections.invoke;
+import static com.eventor.internal.EventorReflections.invoke;
 
 public class MetaHandler {
     public final Method target;
