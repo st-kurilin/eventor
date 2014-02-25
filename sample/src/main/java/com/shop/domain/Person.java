@@ -21,8 +21,8 @@ public class Person {
     public OrderPlaced handle(PlaceOrder cmd) {
         return new OrderPlaced(IdGenerator.generate(),
                 cmd.userEmail,
-                cmd.itemId,
-                calcAmount(cmd.itemId),
+                cmd.itemIds,
+                calcAmount(cmd.itemIds),
                 cmd.cc,
                 cmd.shipmentInfo);
     }

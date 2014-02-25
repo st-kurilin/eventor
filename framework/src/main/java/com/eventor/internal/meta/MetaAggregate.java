@@ -1,8 +1,8 @@
 package com.eventor.internal.meta;
 
 import com.eventor.api.annotations.Id;
+import com.eventor.internal.EventorReflections;
 
-import java.lang.reflect.Field;
 import java.util.Set;
 
 public class MetaAggregate extends MetaSubscriber {
@@ -11,16 +11,7 @@ public class MetaAggregate extends MetaSubscriber {
     }
 
     public Object retrieveId(Object aggregate) {
-        try {
-            for (Field f : aggregate.getClass().getDeclaredFields()) {
-                if (f.isAnnotationPresent(Id.class)) {
-                    f.setAccessible(true);
-                    return f.get(aggregate);
-                }
-            }
-            throw new RuntimeException("Fail while getting id on " + aggregate);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        return EventorReflections.retrieveAnnotatedValue(aggregate, Id.class);
+
     }
 }
