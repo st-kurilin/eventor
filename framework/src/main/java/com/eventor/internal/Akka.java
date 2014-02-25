@@ -9,7 +9,7 @@ import com.eventor.api.Invokable;
 import com.eventor.api.Listener;
 import com.eventor.api.Log;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class Akka {
     private final ActorSystem system = ActorSystem.create("BlackDragon");
@@ -43,8 +43,8 @@ public class Akka {
         return system.actorOf(Props.create(new ActorFromListenerCreator(listener)));
     }
 
-    public Invokable createBroadcaster(ArrayList<Listener> listeners) {
-        ArrayList<ActorRef> refs = new ArrayList<ActorRef>();
+    public Invokable createBroadcaster(Iterable<Listener> listeners) {
+        List<ActorRef> refs = EventorCollections.newList();
         for (Listener each : listeners) {
             refs.add(createActor(each));
         }

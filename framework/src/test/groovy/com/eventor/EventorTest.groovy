@@ -11,10 +11,6 @@ import spock.lang.Specification
 @RunWith(Sputnik)
 class EventorTest extends Specification {
     def "Event should produce aggregates"() {
-        setup:
-        def instanceCreator = new SimpleInstanceCreator()
-        def eventor = new Eventor([Course, CourseStat, Grades], instanceCreator)
-        def eb = instanceCreator.getInstanceOf(EventBus)
         when:
         eb.publish(new CourseRegistered("Math-01"))
         Thread.sleep(500)
@@ -23,11 +19,6 @@ class EventorTest extends Specification {
     }
 
     def "Event listeners should receive messages from aggregates"() {
-        setup:
-        def instanceCreator = new SimpleInstanceCreator()
-        def eventor = new Eventor([Course, CourseStat, Grades], instanceCreator)
-        def eb = instanceCreator.getInstanceOf(EventBus)
-        def cb = instanceCreator.getInstanceOf(CommandBus)
         when:
         eb.publish(new CourseRegistered("Math-01"))
         cb.submit(new SubmitResult("Math-01", "Bob", [1, 2, 42, 1, 3] as int[]))
@@ -38,12 +29,6 @@ class EventorTest extends Specification {
     }
 
     def "Command handlers can handle commands and produce events directly"() {
-        setup:
-        def instanceCreator = new SimpleInstanceCreator()
-        def eventor = new Eventor([Course, CourseStat, Grades], instanceCreator)
-        def eb = instanceCreator.getInstanceOf(EventBus)
-        def ch = instanceCreator.getInstanceOf(CourseRegistrator)
-        ch.eventBus = eb
         when:
         ch.registerCourse("Algo-2013")
         Thread.sleep(500)
