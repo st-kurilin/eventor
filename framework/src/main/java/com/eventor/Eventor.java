@@ -17,21 +17,29 @@ import static com.eventor.internal.EventorCollections.newList;
 
 public class Eventor implements CommandBus {
     private final Info info;
-    private final EventBus eventBus;
-    private final CommandBus commandBus;
     private final InstanceCreator instanceCreator;
     private final Akka akka = new Akka();
     private final Map<Object, Object> aggregates = new HashMap<Object, Object>();
+    private final CommandBus commandBus;
+    private final EventBus eventBus;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     public Eventor(final Iterable<Class<?>> aggregates, final InstanceCreator instanceCreator) {
         this.instanceCreator = instanceCreator;
         info = new ClassProcessor().apply(aggregates);
-        eventBus = createEventBus();
-        commandBus = createCommandBus();
-        instanceCreator.putInstance(CommandBus.class, commandBus);
-        instanceCreator.putInstance(EventBus.class, eventBus);
+        this.eventBus = createEventBus();
+        this.commandBus = createCommandBus();
+    }
+
+    public Eventor(final Iterable<Class<?>> aggregates,
+                   InstanceCreator instanceCreator,
+                   CommandBus commandBus,
+                   EventBus eventBus) {
+        this.instanceCreator = instanceCreator;
+        info = new ClassProcessor().apply(aggregates);
+        this.eventBus = eventBus;
+        this.commandBus = commandBus;
     }
 
     private EventBus createEventBus() {
@@ -158,5 +166,9 @@ public class Eventor implements CommandBus {
     @Override
     public void submit(Object cmd) {
         commandBus.submit(cmd);
+    }
+
+    public EventBus getEventBus() {
+        return eventBus;
     }
 }
