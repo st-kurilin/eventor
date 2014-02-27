@@ -1,11 +1,14 @@
 package com.eventor;
 
 import com.eventor.api.*;
+import com.eventor.api.annotations.Finish;
 import com.eventor.internal.Akka;
 import com.eventor.internal.ClassProcessor;
 import com.eventor.internal.EventorCollections;
 import com.eventor.internal.meta.*;
-import com.eventor.internal.reflection.ClassProcessor;
+
+import com.eventor.api.Scheduler;
+import scala.concurrent.duration.Duration;
 
 import java.util.*;
 
@@ -123,7 +126,21 @@ public class Eventor implements CommandBus {
     private void handleEventBySaga(final MetaSaga eachMetaSaga, final Object event) {
         for (MetaHandler eachMetaHandler : eachMetaSaga.eventHandlers) {
             if (eachMetaHandler.expected.equals(event.getClass())) {
-                eachMetaHandler.execute(instanceCreator.getInstanceOf(eachMetaSaga.origClass), event);
+                Collection<?> commands = eachMetaHandler.execute(instanceCreator.getInstanceOf(eachMetaSaga.origClass), event);
+                Scheduler scheduler = akka.createSheduler();
+                for (Object eachCommand : commands) {
+                    if (eachCommand instanceof Finish) {
+                        scheduler.cancel();
+                        return;
+                    }
+                    else if (eachCommand instanceof Timeout) {
+                        scheduler.scheduleOnce(Duration.create(((Timeout) eachCommand).duration, ((Timeout) eachCommand).unit),
+                                               ((Timeout) eachCommand).timeoutEvent);
+                    }
+                    else {
+                        commandBus.submit(eachCommand);
+                    }
+                }
             }
         }
     }
@@ -177,4 +194,5 @@ public class Eventor implements CommandBus {
     public void submit(Object cmd) {
         commandBus.submit(cmd);
     }
+
 }

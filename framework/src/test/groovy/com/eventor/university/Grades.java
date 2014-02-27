@@ -20,6 +20,11 @@ public class Grades {
         gradesByStudent.put(new CourseStudentKey(evt.courseId, evt.studentId), evt.result);
     }
 
+    @EventListener
+    public void on(FailedOnCourseResultsSubmition evn) {
+        gradesByStudent.put(new CourseStudentKey(evn.courseId, evn.studentId), -1);
+    }
+
     private static class CourseStudentKey {
         String courseId;
         String studentId;

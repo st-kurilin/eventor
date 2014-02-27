@@ -5,14 +5,15 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.Creator;
 import akka.routing.BroadcastRouter;
-import com.eventor.api.Invokable;
-import com.eventor.api.Listener;
-import com.eventor.api.Log;
+import com.eventor.api.*;
+import com.eventor.api.Scheduler;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.List;
 
 public class Akka {
     private final ActorSystem system = ActorSystem.create("BlackDragon");
+    private ActorRef mainActor = null;
     private final Log log = createLog(this);
 
     public Log createLog(Object that) {
@@ -48,7 +49,24 @@ public class Akka {
         for (Listener each : listeners) {
             refs.add(createActor(each));
         }
-        return wrap(system.actorOf(Props.empty().withRouter(BroadcastRouter.create(refs))));
+        mainActor = system.actorOf(Props.empty().withRouter(BroadcastRouter.create(refs)));
+        return wrap(mainActor);
+    }
+
+    public Scheduler createSheduler() {
+        return new Scheduler() {
+            Cancellable cancellable;
+
+            @Override
+            public void scheduleOnce(FiniteDuration duration, Object args) {
+                cancellable = system.scheduler().scheduleOnce(duration, mainActor, args, system.dispatcher(), null);
+            }
+
+            @Override
+            public void cancel() {
+                cancellable.cancel();
+            }
+        };
     }
 
     private Invokable wrap(final ActorRef actorRef) {

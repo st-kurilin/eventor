@@ -2,10 +2,13 @@ package com.eventor
 
 import com.eventor.api.CommandBus
 import com.eventor.api.EventBus
+import com.eventor.api.Timeout
 import com.eventor.university.*
 import org.junit.runner.RunWith
 import org.spockframework.runtime.Sputnik
 import spock.lang.Specification
+
+import java.util.concurrent.TimeUnit
 
 
 @RunWith(Sputnik)
@@ -59,8 +62,17 @@ class EventorTest extends Specification {
         instanceCreator.getInstanceOf(Grades).grade("Math-2013", "Poll") == 120
     }
 
+    def "Saga has to raise event by timeout"() {
+        when:
+        eb.publish(new CourseRegistered("Algorithms"))
+        cb.submit(new StartCourseExam("Algorithms", "Alica"))
+        Thread.sleep(3000)
+        then:
+        instanceCreator.getInstanceOf(Grades).grade("Algorithms", "Alica") == -1 // specific score due to timeout
+    }
+
     def instanceCreator = new SimpleInstanceCreator()
-    def eventor = new Eventor([Course, CourseStat, Grades], instanceCreator)
+    def eventor = new Eventor([Grades, ExamGraduating, Course, CourseStat], instanceCreator)
     def eb = instanceCreator.getInstanceOf(EventBus)
     def ch = instanceCreator.getInstanceOf(CourseRegistrator)
     def cb = instanceCreator.getInstanceOf(CommandBus)
@@ -68,5 +80,4 @@ class EventorTest extends Specification {
     def setup() {
         ch.eventBus = eb
     }
-
 }

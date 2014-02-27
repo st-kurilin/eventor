@@ -7,6 +7,7 @@ public class Course {
     @Id
     private String id;
     private boolean solved;
+    private boolean attempt;
 
     @EventHandler
     @Start
@@ -36,7 +37,12 @@ public class Course {
         }
     }
 
-    @EventHandler
-    public void on(Object e) {
+    @CommandHandler
+    public Object on(@IdIn("courseId") StartCourseExam cmd) {
+        if (attempt) {
+            throw new RuntimeException("Only one attempt for course exam");
+        }
+        attempt = true;
+        return new CourseExamStarted(cmd.courseId, cmd.studentId);
     }
 }

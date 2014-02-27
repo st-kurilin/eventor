@@ -17,9 +17,12 @@ public class ClassProcessor {
         Set<MetaSubscriber> subscribers = newSet();
         Set<MetaSaga> sagas = newSet();
         Map<Class<? extends Annotation>, Iterable<Class<?>>> annotated =
-                EventorReflections.getClassesAnnotated(classes, Aggregate.class, EventListener.class);
+                EventorReflections.getClassesAnnotated(classes, Aggregate.class, Saga.class, EventListener.class);
         for (Class<?> each : annotated.get(Aggregate.class)) {
             aggregates.add(handleAggregate(each));
+        }
+        for (Class<?> each : annotated.get(Saga.class)) {
+            sagas.add(handleSaga(each));
         }
         for (Class<?> each : annotated.get(EventListener.class)) {
             subscribers.add(handleSubscriber(each));
@@ -50,6 +53,14 @@ public class ClassProcessor {
                 extractAggregateEventHandlers(annotated.get(EventHandler.class)));
     }
 
+    private MetaSaga handleSaga(Class<?> sagaClass) {
+        Map<Class<? extends Annotation>, Iterable<Method>> annotated =
+                EventorReflections.getMethodsAnnotated(sagaClass, EventHandler.class, CommandHandler.class);
+        return new MetaSaga(sagaClass,
+                null,
+                extractSagaEventHandlers(annotated.get(EventHandler.class)));
+    }
+
     private Set<MetaHandler> extractAggregateEventHandlers(Iterable<Method> methods) {
         Set<MetaHandler> eventHandlers = newSet();
         for (Method each : methods) {
@@ -70,5 +81,14 @@ public class ClassProcessor {
                     each.getAnnotation(Start.class) != null, idField));
         }
         return commandHandlers;
+    }
+
+    private Set<MetaHandler> extractSagaEventHandlers(Iterable<Method> methods) {
+        Set<MetaHandler> eventHandlers = newSet();
+        for (Method each : methods) {
+            eventHandlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each), null, false,
+                    each.getAnnotation(Start.class) != null, null));
+        }
+        return eventHandlers;
     }
 }
