@@ -6,6 +6,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 @Inherited
+@Deprecated //USE @EventListener
 public @interface EventHandler {
     String idField() default "";
 }

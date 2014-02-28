@@ -30,4 +30,32 @@ public class EventorCollections {
     public static <T> Set<T> newSet() {
         return new HashSet<T>();
     }
+
+    public static <T> Iterable<T> concat(final Iterable<T> a, final Iterable<T> b) {
+        return new Iterable<T>() {
+            @Override
+            public Iterator<T> iterator() {
+                final Iterator<T> ia = a.iterator();
+                final Iterator<T> ib = b.iterator();
+                return new Iterator<T>() {
+                    @Override
+                    public boolean hasNext() {
+                        return ia.hasNext() || ib.hasNext();
+                    }
+
+                    @Override
+                    public T next() {
+                        if (ia.hasNext()) return ia.next();
+                        if (ib.hasNext()) return ib.next();
+                        throw new IllegalStateException();
+                    }
+
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+        };
+    }
 }
