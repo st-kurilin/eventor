@@ -5,12 +5,13 @@ import java.util.concurrent.TimeUnit;
 
 import static com.eventor.internal.EventorCollections.newList;
 
-public class Feature {
+public class Fixture {
     private Iterable<Object> events;
     private Iterable<Object> commands;
     private long delay;
     private TimeUnit delayUnit;
     private Iterable<Object> expectedEvents;
+    private Iterable<Object> notExpectedEvents;
     private MatchMode matchMode;
     private boolean andNoMoreFlag;
     private static Object NO_MORE = new Object();
@@ -21,34 +22,39 @@ public class Feature {
     }
 
     public class When {
-        ThenOrTime whenCommands(Object... commands) {
-            Feature.this.commands = convert(commands);
+        public ThenOrTime whenCommands(Object... commands) {
+            Fixture.this.commands = convert(commands);
             return new ThenOrTime();
         }
     }
 
     public class ThenOrTime extends Then {
 
-        Then addTimePassed(long time, TimeUnit unit) {
-            Feature.this.delay = time;
-            Feature.this.delayUnit = unit;
+        public Then addTimePassed(long time, TimeUnit unit) {
+            Fixture.this.delay = time;
+            Fixture.this.delayUnit = unit;
             return new Then();
         }
     }
 
     public class Then {
-        void thenEventsContainsAnyOf(Object... events) {
-            Feature.this.expectedEvents = convertFinalEvents(events);
+        public void thenEventsContainsAnyOf(Object... events) {
+            Fixture.this.expectedEvents = convertFinalEvents(events);
             matchMode = MatchMode.ANY;
             run();
         }
 
-        void thenEventsContainsAllOf(Object... events) {
-            Feature.this.expectedEvents = convert(events);
+        public void thenEventsContainsAllOf(Object... events) {
+            Fixture.this.expectedEvents = convert(events);
             matchMode = MatchMode.ALL;
             run();
         }
 
+        public void thenEventsDoesntContain(Object... events) {
+            Fixture.this.notExpectedEvents = convert(events);
+            matchMode = MatchMode.ALL;
+            run();
+        }
     }
 
     public static Object andNoMore() {

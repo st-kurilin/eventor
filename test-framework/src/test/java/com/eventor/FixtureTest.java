@@ -4,12 +4,12 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.eventor.Feature.andNoMore;
+import static com.eventor.Fixture.andNoMore;
 
-public class FeatureTest {
+public class FixtureTest {
     @Test
     public void testEmulatingWithDelay() throws Exception {
-        new Feature()
+        new Fixture()
                 .givenEvents(new EventA(), new EventA(), new EventB())
                 .whenCommands(new CommandA(), new CommandB())
                 .thenEventsContainsAnyOf(new EventB());
@@ -17,7 +17,7 @@ public class FeatureTest {
 
     @Test
     public void testEmulatingWithoutDelay() throws Exception {
-        new Feature()
+        new Fixture()
                 .givenEvents(new EventA(), new EventA(), new EventB())
                 .whenCommands(new CommandA(), new CommandB())
                 .addTimePassed(1, TimeUnit.HOURS)
