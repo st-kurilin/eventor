@@ -1,14 +1,8 @@
 package com.eventor;
 
 import com.eventor.api.*;
-import com.eventor.internal.Akka;
-import com.eventor.internal.ClassProcessor;
-import com.eventor.internal.EventorCollections;
-import com.eventor.internal.EventorPreconditions;
-import com.eventor.internal.meta.Info;
-import com.eventor.internal.meta.MetaAggregate;
-import com.eventor.internal.meta.MetaHandler;
-import com.eventor.internal.meta.MetaSubscriber;
+import com.eventor.internal.*;
+import com.eventor.internal.meta.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +15,7 @@ public class Eventor implements CommandBus {
     private final InstanceCreator instanceCreator;
     private final Akka akka = new Akka();
     private final Map<Object, Object> aggregates = new HashMap<Object, Object>();
+    private final Map<Object, Object> sagas = new HashMap<Object, Object>();
     private final CommandBus commandBus;
     private final EventBus eventBus;
 
@@ -49,6 +44,10 @@ public class Eventor implements CommandBus {
             log.info("Register aggregate {} as event listener", eachMetaAggregate.origClass.getSimpleName());
             eventListeners.add(aggregateAsListener(eachMetaAggregate));
         }
+        for (final MetaSaga eachMetaSaga : info.sagas) {
+            log.info("Register saga {} as event listener", eachMetaSaga.origClass.getSimpleName());
+            eventListeners.add(sagaAsListener(eachMetaSaga));
+        }
         for (final MetaSubscriber each : info.subscribers) {
             log.info("Register event listener {}", each.origClass.getSimpleName());
             eventListeners.add(eventListenerAsListener(each));
@@ -68,6 +67,10 @@ public class Eventor implements CommandBus {
         for (final MetaAggregate eachMetaAggregate : info.aggregates) {
             log.info("Register aggregate {} as command handler", eachMetaAggregate.origClass.getSimpleName());
             commandHandlers.add(aggregateAsCommandHandlerAsListener(eachMetaAggregate));
+        }
+        for (final MetaSaga eachMetaSaga : info.sagas) {
+            log.info("Register saga {} as command handler", eachMetaSaga.origClass.getSimpleName());
+            commandHandlers.add(sagaAsCommandHandlerAsListener(eachMetaSaga));
         }
         final Invokable router = akka.createBroadcaster(commandHandlers);
         return new CommandBus() {
@@ -91,6 +94,21 @@ public class Eventor implements CommandBus {
                     }
                     for (Object eachEvent : events) {
                         eventBus.publish(eachEvent);
+                    }
+                }
+            }
+        }
+    }
+
+    private void handleCmdBySaga(MetaSaga eachMetaSaga, Object cmd) {
+        for (MetaHandler eachMetaHandler : eachMetaSaga.commandHandlers) {
+            if (eachMetaHandler.expected.equals(cmd.getClass())) {
+                Object sagaId = eachMetaHandler.extractId(cmd);
+                if (sagas.containsKey(sagaId)) {
+                    Object saga = sagas.get(sagaId);
+                    Collection<?> commands = EventorCollections.toCollection(eachMetaHandler.execute(saga, cmd));
+                    for (Object message : commands) {
+                        commandBus.submit(message);
                     }
                 }
             }
@@ -140,12 +158,50 @@ public class Eventor implements CommandBus {
         if (!res.isEmpty()) throw new RuntimeException("Void expected");
     }
 
+    private void handleEventBySaga(final MetaSaga eachMetaSaga, final Object event) {
+        for (MetaHandler eachMetaHandler : eachMetaSaga.eventHandlers) {
+            if (eachMetaHandler.expected.equals(event.getClass())) {
+                if (eachMetaHandler.alwaysStart) {
+                    Object saga = instanceCreator.newInstanceOf(eachMetaSaga.origClass);
+                    handleEventBySaga(saga, eachMetaHandler, event);
+                    Object id = eachMetaSaga.retrieveId(saga);
+                    EventorPreconditions.assume(!sagas.containsKey(id),
+                            "Could not create saga with duplicate id [%s] on event [%s]",
+                            id, event);
+                    sagas.put(id, saga);
+                    log.info("Saga with id {} registered", id);
+                } else {
+                    for (Object saga : sagas.values()) {
+                        handleEventBySaga(saga, eachMetaHandler, event);
+                    }
+                }
+            }
+        }
+    }
+
+    private void handleEventBySaga(Object aggregate, MetaHandler eachMetaHandler, Object event) {
+        Collection<?> commands = eachMetaHandler.execute(aggregate, event);
+        for (Object message : commands) {
+            commandBus.submit(message);
+        }
+    }
+
     private Listener aggregateAsCommandHandlerAsListener(final MetaAggregate eachMetaAggregate) {
         return new Listener() {
             @Override
             public void apply(Object cmd) {
                 log.info("Command {} will be handled by aggregates", cmd);
                 handleCmdByAggregate(eachMetaAggregate, cmd);
+            }
+        };
+    }
+
+    private Listener sagaAsCommandHandlerAsListener(final MetaSaga eachMetaSaga) {
+        return new Listener() {
+            @Override
+            public void apply(Object cmd) {
+                log.info("Command {} will be handled by sagas", cmd);
+                handleCmdBySaga(eachMetaSaga, cmd);
             }
         };
     }
@@ -166,6 +222,16 @@ public class Eventor implements CommandBus {
             public void apply(Object event) {
                 log.info("Event {} will be handled by aggregates", event);
                 handleEventByAggregate(eachMetaAggregate, event);
+            }
+        };
+    }
+
+    private Listener sagaAsListener(final MetaSaga eachMetaSaga) {
+        return new Listener() {
+            @Override
+            public void apply(Object event) {
+                log.info("Event {} will be handled by sagas", event);
+                handleEventBySaga(eachMetaSaga, event);
             }
         };
     }
