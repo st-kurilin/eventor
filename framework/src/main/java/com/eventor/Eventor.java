@@ -4,6 +4,7 @@ import com.eventor.api.*;
 import com.eventor.internal.Akka;
 import com.eventor.internal.ClassProcessor;
 import com.eventor.internal.EventorCollections;
+import com.eventor.internal.EventorPreconditions;
 import com.eventor.internal.meta.Info;
 import com.eventor.internal.meta.MetaAggregate;
 import com.eventor.internal.meta.MetaHandler;
@@ -119,10 +120,16 @@ public class Eventor implements CommandBus {
                 if (eachMetaHandler.alwaysStart) {
                     Object aggregate = instanceCreator.newInstanceOf(eachMetaAggregate.origClass);
                     handleEventByAggregate(aggregate, eachMetaHandler, event);
-                    aggregates.put(eachMetaAggregate.retrieveId(aggregate), aggregate);
-                }
-                for (Object aggregate : aggregates.values()) {
-                    handleEventByAggregate(aggregate, eachMetaHandler, event);
+                    Object id = eachMetaAggregate.retrieveId(aggregate);
+                    EventorPreconditions.assume(!aggregates.containsKey(id),
+                            "Could not create aggregate with duplicate id [%s] on event [%s]",
+                            id, event);
+                    aggregates.put(id, aggregate);
+                    log.info("Aggregate with id {} registered", id);
+                } else {
+                    for (Object aggregate : aggregates.values()) {
+                        handleEventByAggregate(aggregate, eachMetaHandler, event);
+                    }
                 }
             }
         }
