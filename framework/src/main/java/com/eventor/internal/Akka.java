@@ -1,8 +1,6 @@
 package com.eventor.internal;
 
 import akka.actor.*;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import akka.japi.Creator;
 import akka.routing.BroadcastRouter;
 import com.eventor.api.*;
@@ -14,27 +12,6 @@ import java.util.List;
 public class Akka {
     private final ActorSystem system = ActorSystem.create("BlackDragon");
     private ActorRef mainActor = null;
-    private final Log log = createLog(this);
-
-    public Log createLog(Object that) {
-        final LoggingAdapter loggingAdapter = Logging.getLogger(system, that);
-        return new Log() {
-            @Override
-            public void debug(String msg, Object... args) {
-                loggingAdapter.debug(msg, args);
-            }
-
-            @Override
-            public void info(String msg, Object... args) {
-                loggingAdapter.info(msg, args);
-            }
-
-            @Override
-            public void warn(String msg, Object... args) {
-                loggingAdapter.warning(msg, args);
-            }
-        };
-    }
 
     public Invokable createInvokable(Listener listener) {
         return wrap(createActor(listener));

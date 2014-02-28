@@ -17,13 +17,13 @@ public class ClassProcessor {
         Set<MetaSubscriber> subscribers = newSet();
         Set<MetaSaga> sagas = newSet();
         Map<Class<? extends Annotation>, Iterable<Class<?>>> annotated =
-                EventorReflections.getClassesAnnotated(classes, Aggregate.class, Saga.class, EventListener.class);
+                EventorReflections.getClassesAnnotated(classes, Aggregate.class, EventListener.class, Saga.class);
         for (Class<?> each : annotated.get(Aggregate.class)) {
             aggregates.add(handleAggregate(each));
         }
         for (Class<?> each : annotated.get(Saga.class)) {
             sagas.add(handleSaga(each));
-        }
+        } 
         for (Class<?> each : annotated.get(EventListener.class)) {
             subscribers.add(handleSubscriber(each));
         }

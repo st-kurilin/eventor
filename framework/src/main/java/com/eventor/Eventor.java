@@ -6,8 +6,8 @@ import com.eventor.internal.Akka;
 import com.eventor.internal.ClassProcessor;
 import com.eventor.internal.EventorCollections;
 import com.eventor.internal.meta.*;
-
-import com.eventor.api.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.concurrent.duration.Duration;
 
 import java.util.*;
@@ -16,21 +16,29 @@ import static com.eventor.internal.EventorCollections.newList;
 
 public class Eventor implements CommandBus {
     private final Info info;
-    private final EventBus eventBus;
-    private final CommandBus commandBus;
     private final InstanceCreator instanceCreator;
     private final Akka akka = new Akka();
     private final Map<Object, Object> aggregates = new HashMap<Object, Object>();
+    private final CommandBus commandBus;
+    private final EventBus eventBus;
 
-    private final Log log = akka.createLog(this);
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     public Eventor(final Iterable<Class<?>> aggregates, final InstanceCreator instanceCreator) {
         this.instanceCreator = instanceCreator;
         info = new ClassProcessor().apply(aggregates);
-        eventBus = createEventBus();
-        commandBus = createCommandBus();
-        instanceCreator.putInstance(CommandBus.class, commandBus);
-        instanceCreator.putInstance(EventBus.class, eventBus);
+        this.eventBus = createEventBus();
+        this.commandBus = createCommandBus();
+    }
+
+    public Eventor(final Iterable<Class<?>> aggregates,
+                   InstanceCreator instanceCreator,
+                   CommandBus commandBus,
+                   EventBus eventBus) {
+        this.instanceCreator = instanceCreator;
+        info = new ClassProcessor().apply(aggregates);
+        this.eventBus = eventBus;
+        this.commandBus = commandBus;
     }
 
     private EventBus createEventBus() {
@@ -108,6 +116,27 @@ public class Eventor implements CommandBus {
         }
     }
 
+    private void handleEventBySaga(final MetaSaga eachMetaSaga, final Object event) {
+        for (MetaHandler eachMetaHandler : eachMetaSaga.eventHandlers) {
+            if (eachMetaHandler.expected.equals(event.getClass())) {
+                Collection<?> commands = eachMetaHandler.execute(instanceCreator.getInstanceOf(eachMetaSaga.origClass), event);
+                Scheduler scheduler = akka.createSheduler();
+                for (Object eachCommand : commands) {
+                    if (eachCommand instanceof Finish) {
+                        scheduler.cancel();
+                    }
+                    else if (eachCommand instanceof Timeout) {
+                        Timeout timeout = (Timeout) eachCommand;
+                        scheduler.scheduleOnce(Duration.create(timeout.duration, timeout.unit), timeout.timeoutEvent);
+                    }
+                    else {
+                        commandBus.submit(eachCommand);
+                    }
+                }
+            }
+        }
+    }
+
     private void handleEventByAggregate(final MetaAggregate eachMetaAggregate, final Object event) {
         for (final MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
             if (eachMetaHandler.expected.equals(event.getClass())) {
@@ -118,28 +147,6 @@ public class Eventor implements CommandBus {
                 }
                 for (Object aggregate : aggregates.values()) {
                     handleEventByAggregate(aggregate, eachMetaHandler, event);
-                }
-            }
-        }
-    }
-
-    private void handleEventBySaga(final MetaSaga eachMetaSaga, final Object event) {
-        for (MetaHandler eachMetaHandler : eachMetaSaga.eventHandlers) {
-            if (eachMetaHandler.expected.equals(event.getClass())) {
-                Collection<?> commands = eachMetaHandler.execute(instanceCreator.getInstanceOf(eachMetaSaga.origClass), event);
-                Scheduler scheduler = akka.createSheduler();
-                for (Object eachCommand : commands) {
-                    if (eachCommand instanceof Finish) {
-                        scheduler.cancel();
-                        return;
-                    }
-                    else if (eachCommand instanceof Timeout) {
-                        scheduler.scheduleOnce(Duration.create(((Timeout) eachCommand).duration, ((Timeout) eachCommand).unit),
-                                               ((Timeout) eachCommand).timeoutEvent);
-                    }
-                    else {
-                        commandBus.submit(eachCommand);
-                    }
                 }
             }
         }
@@ -195,4 +202,7 @@ public class Eventor implements CommandBus {
         commandBus.submit(cmd);
     }
 
+    public EventBus getEventBus() {
+        return eventBus;
+    }
 }

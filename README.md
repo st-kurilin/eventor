@@ -23,36 +23,36 @@ Let's consider sample for registration with email confirmation.
 
 ###API
 ####Commands
-
+    
     public class RegisterRequest {
         public String email;
         public String name;
         public String password;
-
+    
         public RegisterRequest(String email, String name, String password) {
             this.email = email;
             this.name = name;
             this.password = password;
         }
     }
-
-    public class VerifyEmail {
+    
+    public class ConfirmEmail {
         public final String email;
         public final String token;
-
-        public VerifyEmail(String email, String token) {
+    
+        public ConfirmEmail(String email, String token) {
             this.email = email;
             this.token = token;
         }
     }
 
 ####Events
-
+    
     public class PersonRegistered {
         public String email;
         public String name;
         public String password;
-
+    
         public PersonRegistered(String email, String name, String password) {
             this.email = email;
             this.name = name;
@@ -60,29 +60,26 @@ Let's consider sample for registration with email confirmation.
         }
     }
 
-
 ###Domain
-
-    import com.eventor.api.*;
-    import com.eventor.api.annotations.*;
-    import java.util.concurrent.TimeUnit;
-
+    
+    
+    
     //Registration Saga represents Registration with email confirmation process.
     @Saga
     public class Registration {
         private final CommandBus commandBus;
         private final EventBus eventBus;
-
+    
         private String email;
         private String name;
         private String password;
         private RegisterRequest registerRequest;
-
+    
         public Registration(CommandBus commandBus, EventBus eventBus) {
             this.commandBus = commandBus;
             this.eventBus = eventBus;
         }
-
+    
         //Start registration process
         @Start
         @CommandHandler
@@ -93,50 +90,49 @@ Let's consider sample for registration with email confirmation.
             sendEmailWithToken(email, generateToken(email));
             return new Timeout(14, TimeUnit.DAYS, new RegistrationTimeout());
         }
-
+    
         //Try to confirm email
         @CommandHandler
         public Object handle(@IdIn("email") ConfirmEmail cmd) {
             if (validToken(cmd.email, cmd.token)) {
-                eventBus.publish(new PersonRegistered(email, name, password));
-                return Finish.RESULT;
+                eventBus.publish(new PersonRegistered(email, name, password)); //Generate Domain Event
+                return Finish.RESULT;   //Finish Registration Saga
             }
             return null;
         }
-
+    
         //Email hadn't confirmed for long time
-        public Object on(RegistrationTimeout timeout) {
-            return Finish.RESULT;
+        @OnTimeout(RegistrationTimeout.class)
+        public Object hadntConfirmedForLongTime() {
+            return Finish.RESULT;   //Finish Registration Saga
         }
-
+    
         private static class RegistrationTimeout {
         }
-
+    
         //Fake email sender
         private void sendEmailWithToken(String email, String token) {
             System.out.println(String.format("Email with token [%s] send to [%s]", token, email));
         }
-
+    
         //Dump security impl
         private boolean validToken(String email, String token) {
             return email.equals(token);
         }
-
+    
         private String generateToken(String email) {
             return email;
         }
     }
 
-
 ###View
-
-    import com.eventor.api.*;
-    import java.util.*;
-
+    
+    
+    
     @EventListener
     public class UsersList {
         private final List<String> users = new ArrayList<String>();
-
+    
         @EventListener
         public void on(PersonRegistered event) {
             users.add(event.name);

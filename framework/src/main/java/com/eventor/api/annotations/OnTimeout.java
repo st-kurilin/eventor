@@ -4,7 +4,8 @@ import java.lang.annotation.*;
 
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target({ElementType.METHOD})
 @Inherited
-public @interface Saga {
+public @interface OnTimeout {
+    Class<?> value();
 }

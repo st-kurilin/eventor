@@ -1,15 +1,9 @@
 package com.eventor
 
-import com.eventor.api.CommandBus
-import com.eventor.api.EventBus
-import com.eventor.api.Timeout
 import com.eventor.university.*
 import org.junit.runner.RunWith
 import org.spockframework.runtime.Sputnik
 import spock.lang.Specification
-
-import java.util.concurrent.TimeUnit
-
 
 @RunWith(Sputnik)
 class EventorTest extends Specification {
@@ -72,10 +66,10 @@ class EventorTest extends Specification {
     }
 
     def instanceCreator = new SimpleInstanceCreator()
-    def eventor = new Eventor([Grades, ExamGraduating, Course, CourseStat], instanceCreator)
-    def eb = instanceCreator.getInstanceOf(EventBus)
+    def eventor = new Eventor([ExamGraduating, Course, CourseStat, Grades], instanceCreator)
+    def eb = eventor.getEventBus()
+    def cb = eventor
     def ch = instanceCreator.getInstanceOf(CourseRegistrator)
-    def cb = instanceCreator.getInstanceOf(CommandBus)
 
     def setup() {
         ch.eventBus = eb

@@ -1,0 +1,51 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<testsuite name="com.eventor.EventorTest" tests="6" failures="6" errors="0" timestamp="1970-01-01T00:00:00" hostname="EPUAKHAW0465" time="1.393591421764E9">
+  <properties/>
+  <testcase name="Event should produce aggregates" classname="com.eventor.EventorTest" time="0.516">
+    <failure message="java.lang.NullPointerException" type="java.lang.NullPointerException">java.lang.NullPointerException
+	at com.eventor.internal.ClassProcessor.apply(ClassProcessor.java:24)
+	at com.eventor.Eventor.&lt;init&gt;(Eventor.java:29)
+	at com.eventor.EventorTest.$spock_initializeFields(EventorTest.groovy:69)
+</failure>
+  </testcase>
+  <testcase name="Event listeners should receive messages from aggregates" classname="com.eventor.EventorTest" time="0.007">
+    <failure message="java.lang.NullPointerException" type="java.lang.NullPointerException">java.lang.NullPointerException
+	at com.eventor.internal.ClassProcessor.apply(ClassProcessor.java:24)
+	at com.eventor.Eventor.&lt;init&gt;(Eventor.java:29)
+	at com.eventor.EventorTest.$spock_initializeFields(EventorTest.groovy:69)
+</failure>
+  </testcase>
+  <testcase name="Command handlers can handle commands and produce events directly" classname="com.eventor.EventorTest" time="0.01">
+    <failure message="java.lang.NullPointerException" type="java.lang.NullPointerException">java.lang.NullPointerException
+	at com.eventor.internal.ClassProcessor.apply(ClassProcessor.java:24)
+	at com.eventor.Eventor.&lt;init&gt;(Eventor.java:29)
+	at com.eventor.EventorTest.$spock_initializeFields(EventorTest.groovy:69)
+</failure>
+  </testcase>
+  <testcase name="Aggregates maintain state between interactions" classname="com.eventor.EventorTest" time="0.007">
+    <failure message="java.lang.NullPointerException" type="java.lang.NullPointerException">java.lang.NullPointerException
+	at com.eventor.internal.ClassProcessor.apply(ClassProcessor.java:24)
+	at com.eventor.Eventor.&lt;init&gt;(Eventor.java:29)
+	at com.eventor.EventorTest.$spock_initializeFields(EventorTest.groovy:69)
+</failure>
+  </testcase>
+  <testcase name="Aggregates have independent state" classname="com.eventor.EventorTest" time="0.007">
+    <failure message="java.lang.NullPointerException" type="java.lang.NullPointerException">java.lang.NullPointerException
+	at com.eventor.internal.ClassProcessor.apply(ClassProcessor.java:24)
+	at com.eventor.Eventor.&lt;init&gt;(Eventor.java:29)
+	at com.eventor.EventorTest.$spock_initializeFields(EventorTest.groovy:69)
+</failure>
+  </testcase>
+  <testcase name="Saga has to raise event by timeout" classname="com.eventor.EventorTest" time="0.005">
+    <failure message="java.lang.NullPointerException" type="java.lang.NullPointerException">java.lang.NullPointerException
+	at com.eventor.internal.ClassProcessor.apply(ClassProcessor.java:24)
+	at com.eventor.Eventor.&lt;init&gt;(Eventor.java:29)
+	at com.eventor.EventorTest.$spock_initializeFields(EventorTest.groovy:69)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+]]></system-err>
+</testsuite>

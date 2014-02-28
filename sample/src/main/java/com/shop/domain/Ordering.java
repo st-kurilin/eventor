@@ -25,7 +25,8 @@ public class Ordering {
         return new Timeout(2, TimeUnit.HOURS, new TimeToCharge());
     }
 
-    public Charge charge(TimeToCharge charge) {
+    @OnTimeout(TimeToCharge.class)
+    public Charge charge() {
         return new Charge(IdGenerator.generate(), orderPlaced.cc, orderPlaced.amount);
     }
 

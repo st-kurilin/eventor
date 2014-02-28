@@ -45,4 +45,8 @@ public class Course {
         attempt = true;
         return new CourseExamStarted(cmd.courseId, cmd.studentId);
     }
+
+    @EventHandler
+    public void on(Object e) {
+    }
 }

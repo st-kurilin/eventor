@@ -41,15 +41,16 @@ public class Registration {
     @CommandHandler
     public Object handle(@IdIn("email") ConfirmEmail cmd) {
         if (validToken(cmd.email, cmd.token)) {
-            eventBus.publish(new PersonRegistered(email, name, password));
-            return Finish.RESULT;
+            eventBus.publish(new PersonRegistered(email, name, password)); //Generate Domain Event
+            return Finish.RESULT;   //Finish Registration Saga
         }
         return null;
     }
 
     //Email hadn't confirmed for long time
-    public Object on(RegistrationTimeout timeout) {
-        return Finish.RESULT;
+    @OnTimeout(RegistrationTimeout.class)
+    public Object hadntConfirmedForLongTime() {
+        return Finish.RESULT;   //Finish Registration Saga
     }
 
     private static class RegistrationTimeout {

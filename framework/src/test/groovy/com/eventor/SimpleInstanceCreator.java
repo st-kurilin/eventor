@@ -31,9 +31,4 @@ public class SimpleInstanceCreator implements InstanceCreator {
         }
         return newInstanceOf(clazz);
     }
-
-    @Override
-    public synchronized <T> void putInstance(Class<T> clazz, T obj) {
-        instancies.put(clazz, obj);
-    }
 }
