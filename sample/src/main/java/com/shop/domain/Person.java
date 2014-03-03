@@ -35,15 +35,7 @@ public class Person {
 
     @CommandHandler
     public OrderCanceled handle(CancelOrder cmd) {
-        return new OrderCanceled(cmd.userEmail, cmd.itemId);
-    }
-
-    @EventHandler
-    public void on(OrderPlaced event) {
-    }
-
-    @EventHandler
-    public void on(OrderCanceled event) {
+        return new OrderCanceled(cmd.userEmail);
     }
 
     private Money calcAmount(Set<String> itemId) {

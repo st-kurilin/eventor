@@ -1,9 +1,13 @@
 package com.eventor;
 
+import com.eventor.internal.EventorCollections;
+
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.eventor.internal.EventorCollections.newList;
+import static com.eventor.internal.EventorCollections.newSet;
 
 public class Fixture {
     private Iterable<Object> events;
@@ -12,7 +16,6 @@ public class Fixture {
     private TimeUnit delayUnit;
     private Iterable<Object> expectedEvents;
     private Iterable<Object> notExpectedEvents;
-    private MatchMode matchMode;
     private boolean andNoMoreFlag;
     private static Object NO_MORE = new Object();
 
@@ -22,50 +25,40 @@ public class Fixture {
     }
 
     public class When {
-        public ThenOrTime whenCommands(Object... commands) {
+        public When whenCommands(Object... commands) {
             Fixture.this.commands = convert(commands);
-            return new ThenOrTime();
+            return this;
         }
-    }
 
-    public class ThenOrTime extends Then {
-
-        public Then addTimePassed(long time, TimeUnit unit) {
+        public When addTimePassed(long time, TimeUnit unit) {
             Fixture.this.delay = time;
             Fixture.this.delayUnit = unit;
+            return this;
+        }
+
+        public Then then() {
             return new Then();
         }
     }
 
+
     public class Then {
-        public void thenEventsContainsAnyOf(Object... events) {
-            Fixture.this.expectedEvents = convertFinalEvents(events);
-            matchMode = MatchMode.ANY;
-            run();
+        public Then eventsContainsAnyOf(Object... events) {
+            return this;
         }
 
-        public void thenEventsContainsAllOf(Object... events) {
-            Fixture.this.expectedEvents = convert(events);
-            matchMode = MatchMode.ALL;
-            run();
+        public Then eventsContainsAllOf(Object... events) {
+            new EventMatchers.Contains(convertFinalEvents(events)).on(EventorCollections.newSet(), false);
+            return this;
         }
 
-        public void thenEventsDoesntContain(Object... events) {
-            Fixture.this.notExpectedEvents = convert(events);
-            matchMode = MatchMode.ALL;
-            run();
+        public Then eventsDoesntContain(Object... events) {
+            return this;
         }
     }
 
     public static Object andNoMore() {
         return NO_MORE;
-    }
-
-    private enum MatchMode {
-        ALL, ANY
-    }
-
-    private void run() {
     }
 
     private Iterable<Object> convert(Object[] inp) {
@@ -74,8 +67,8 @@ public class Fixture {
         return res;
     }
 
-    private Iterable<Object> convertFinalEvents(Object[] inp) {
-        List<Object> res = newList();
+    private Set<Object> convertFinalEvents(Object[] inp) {
+        Set<Object> res = newSet();
         for (Object each : inp) {
             if (NO_MORE.equals(each)) {
                 if (andNoMoreFlag) throw new RuntimeException("andNoMore() should not be passed twice");

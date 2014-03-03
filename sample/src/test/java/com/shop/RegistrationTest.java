@@ -15,7 +15,8 @@ public class RegistrationTest {
                 .givenEvents()
                 .whenCommands(new RegisterRequest("e@e.com", "bob", "1234"),
                         new ConfirmEmail("e@e.com", "e@e.com"))
-                .thenEventsContainsAnyOf(new PersonRegistered("e@e.com", "bob", "1234"));
+                .then()
+                .eventsContainsAnyOf(new PersonRegistered("e@e.com", "bob", "1234"));
     }
 
     @Test
@@ -24,6 +25,8 @@ public class RegistrationTest {
                 .givenEvents()
                 .whenCommands(new RegisterRequest("e@e.com", "bob", "1234"))
                 .addTimePassed(30, TimeUnit.DAYS)
-                .thenEventsDoesntContain(new PersonRegistered("e@e.com", "bob", "1234"));
+                .whenCommands(new ConfirmEmail("e@e.com", "e@e.com"))
+                .then()
+                .eventsDoesntContain(new PersonRegistered("e@e.com", "bob", "1234"));
     }
 }

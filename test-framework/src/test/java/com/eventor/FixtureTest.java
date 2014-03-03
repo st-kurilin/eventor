@@ -12,7 +12,8 @@ public class FixtureTest {
         new Fixture()
                 .givenEvents(new EventA(), new EventA(), new EventB())
                 .whenCommands(new CommandA(), new CommandB())
-                .thenEventsContainsAnyOf(new EventB());
+                .then()
+                .eventsContainsAnyOf(new EventB());
     }
 
     @Test
@@ -21,7 +22,8 @@ public class FixtureTest {
                 .givenEvents(new EventA(), new EventA(), new EventB())
                 .whenCommands(new CommandA(), new CommandB())
                 .addTimePassed(1, TimeUnit.HOURS)
-                .thenEventsContainsAllOf(new EventB(), new EventB(), andNoMore());
+                .then()
+                .eventsDoesntContain(new EventB(), new EventB(), andNoMore());
     }
 
     private static class EventA {

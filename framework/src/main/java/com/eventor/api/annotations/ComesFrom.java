@@ -4,8 +4,8 @@ import java.lang.annotation.*;
 
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
+@Target(ElementType.FIELD)
 @Inherited
-public @interface Finish {
-    public static final String RESULT = "FinishFlag";
+public @interface ComesFrom {
+    Class<?>[] value();
 }

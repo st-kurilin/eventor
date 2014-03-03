@@ -1,37 +1,98 @@
 package com.shop.domain;
 
-import com.eventor.api.IdGenerator;
 import com.eventor.api.Timeout;
 import com.eventor.api.annotations.*;
 import com.shop.api.ecom.OrderCanceled;
 import com.shop.api.ecom.OrderPlaced;
-import com.shop.api.money.Charge;
 import com.shop.api.money.Charged;
-import com.shop.api.shipment.Send;
+import com.shop.api.money.ChargingFailed;
+import com.shop.api.shipment.SendingFailed;
+import com.shop.api.shipment.Sent;
 
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 @Saga
-@Keys({@Key(field = "orderId", classes = {OrderPlaced.class, OrderCanceled.class}),
-        @Key(field = "transactionId", classes = Charged.class)})
 public class Ordering {
-    OrderPlaced orderPlaced;
+
+    private final ShipmentService shipmentService;
+    private final ChargingService chargingService;
+
+    @Id
+    @ComesFrom({OrderPlaced.class, OrderCanceled.class})
+    private String orderId;
+
+    @Id
+    @ComesFrom({Charged.class, ChargingFailed.class})
+    private String chargingTransactionId;
+
+    @Id
+    @ComesFrom({Sent.class, SendingFailed.class})
+    private String trackingId;
+
+    private State state;
+    private OrderPlaced orderPlaced;
+
+    public Ordering(ShipmentService shipmentService, ChargingService chargingService) {
+        this.shipmentService = shipmentService;
+        this.chargingService = chargingService;
+    }
 
     @Start
-    @EventHandler
+    @EventListener
     public Timeout on(@IdIn("orderId") OrderPlaced evn) {
+        state = State.INIT_WAIT;
         this.orderPlaced = evn;
         return new Timeout(2, TimeUnit.HOURS, new TimeToCharge());
     }
 
     @OnTimeout(TimeToCharge.class)
-    public Charge charge() {
-        return new Charge(IdGenerator.generate(), orderPlaced.cc, orderPlaced.amount);
+    public void charge() {
+        chargingTransactionId = chargingService.charge(orderPlaced.cc, orderPlaced.amount);
+        state = State.CHARGING;
     }
 
-    public Send charged(Charged charged) {
-        return new Send(IdGenerator.generate(), orderPlaced.shipmentInfo, orderPlaced.items);
+    @EventListener
+    public void charged(Charged charged) {
+        trackingId = shipmentService.send(orderPlaced.shipmentInfo, orderPlaced.items);
+        state = State.SHIPPING;
+    }
+
+    @Finish
+    @EventListener
+    public void on(@IdIn("trackingId") Sent evn) {
+    }
+
+    @Finish
+    @EventListener
+    public void on(@IdIn("orderId") OrderCanceled evn) {
+        switch (state) {
+            case INIT_WAIT:
+                return;
+            case CHARGING:
+                chargingService.cancel(chargingTransactionId);
+                return;
+            case SHIPPING:
+                chargingService.cancelWithCommision(chargingTransactionId, 0.1);
+                return;
+            default:
+                throw new AssertionError(state);
+        }
+    }
+
+    @Finish
+    @EventListener
+    public void on(@IdIn("transactionId") ChargingFailed evn) {
+    }
+
+    @Finish
+    @EventListener
+    public void on(@IdIn("trackingId") SendingFailed evn) {
+        chargingService.cancel(chargingTransactionId);
+    }
+
+    private enum State {
+        INIT_WAIT, CHARGING, SHIPPING
     }
 
     private static class TimeToCharge implements Serializable {
