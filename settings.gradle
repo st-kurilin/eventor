@@ -1,4 +1,6 @@
 include 'framework'
 include 'test-framework'
-include 'sample'
-include 'guice'
+include 'samples'
+include 'samples:sample'
+include 'integration:guice'
+include 'integration:guice'
