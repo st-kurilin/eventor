@@ -5,10 +5,14 @@ import akka.japi.Creator;
 import akka.routing.BroadcastRouter;
 import com.eventor.api.Invokable;
 import com.eventor.api.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class Akka {
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
+
     private final ActorSystem system = ActorSystem.create("BlackDragon");
 
     public Invokable createInvokable(Listener listener) {
@@ -23,6 +27,15 @@ public class Akka {
         List<ActorRef> refs = EventorCollections.newList();
         for (Listener each : listeners) {
             refs.add(createActor(each));
+        }
+        if (refs.isEmpty()) {
+            return new Invokable() {
+                @Override
+                public Object invoke(Object arg, Object invoker) {
+                    log.debug("Nothing to invoke on {}", arg);
+                    return null;
+                }
+            };
         }
         return wrap(system.actorOf(Props.empty().withRouter(BroadcastRouter.create(refs))));
     }
