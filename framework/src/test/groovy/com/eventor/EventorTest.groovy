@@ -36,9 +36,10 @@ class EventorTest extends Specification {
     def "Aggregates maintain state between interactions"() {
         when:
         ch.registerCourse("Algo-2013")
+        Thread.sleep(100)
         cb.submit(new SubmitAnswer("Algo-2013", "Bob", [42, 42, 42, 42, 42] as int[]))
         cb.submit(new SubmitAnswer("Algo-2013", "Poll", [42, 42, 42, 42, 42] as int[]))
-        Thread.sleep(1000)
+        Thread.sleep(500)
         then:
         instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
         instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Poll") == 100
@@ -48,9 +49,10 @@ class EventorTest extends Specification {
         when:
         ch.registerCourse("Algo-2013")
         ch.registerCourse("Math-2013")
+        Thread.sleep(100)
         cb.submit(new SubmitAnswer("Algo-2013", "Bob", [42, 42, 42, 42, 42] as int[]))
         cb.submit(new SubmitAnswer("Math-2013", "Poll", [42, 42, 42, 42, 42] as int[]))
-        Thread.sleep(1000)
+        Thread.sleep(500)
         then:
         instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
         instanceCreator.getInstanceOf(Grades).grade("Math-2013", "Poll") == 120
@@ -60,6 +62,7 @@ class EventorTest extends Specification {
         when:
         ch.registerCourse("Algo-2014")
         ch.registerCourse("Math-2014")
+        Thread.sleep(100)
         cb.submit(new StartFinalExam("Algo-2014", "Ann"))
         cb.submit(new StartFinalExam("Math-2014", "Marina"))
         cb.submit(new SubmitPartAnswer("Algo-2014", "Ann", [42, 0, 0, 0, 0] as int[], 1))
@@ -68,7 +71,7 @@ class EventorTest extends Specification {
         cb.submit(new SubmitPartAnswer("Math-2014", "Marina", [42, 42, 42, 42, 42] as int[], 2))
         cb.submit(new SubmitPartAnswer("Algo-2014", "Ann", [42, 0, 0, 0, 0] as int[], 3))
         cb.submit(new SubmitPartAnswer("Math-2014", "Marina", [42, 42, 42, 42, 42] as int[], 3))
-        Thread.sleep(1000)
+        Thread.sleep(500)
         then:
         instanceCreator.getInstanceOf(Grades).grade("Algo-2014", "Ann") == 20
         instanceCreator.getInstanceOf(Grades).grade("Math-2014", "Marina") == 100
@@ -77,11 +80,13 @@ class EventorTest extends Specification {
     def "Saga should receive events and generate commands"() {
         when:
         ch.registerCourse("Bio-2014")
+        Thread.sleep(100)
         cb.submit(new StartFinalExam("Bio-2014", "Alica"))
+        Thread.sleep(100)
         cb.submit(new SubmitPartAnswer("Bio-2014", "Alica", [42, 42, 42, 42, 0] as int[], 1))
         cb.submit(new SubmitPartAnswer("Bio-2014", "Alica", [42, 42, 42, 42, 0] as int[], 2))
         cb.submit(new SubmitPartAnswer("Bio-2014", "Alica", [42, 42, 42, 42, 0] as int[], 3))
-        Thread.sleep(1000)
+        Thread.sleep(500)
         then:
         instanceCreator.getInstanceOf(Grades).grade("Bio-2014", "Alica") == 80
     }
