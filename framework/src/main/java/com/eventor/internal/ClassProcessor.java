@@ -1,16 +1,15 @@
 package com.eventor.internal;
 
 import com.eventor.api.annotations.*;
-import com.eventor.api.annotations.EventHandler;
 import com.eventor.internal.meta.*;
 
-import java.beans.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.eventor.internal.EventorCollections.concat;
 import static com.eventor.internal.EventorCollections.newSet;
 
 public class ClassProcessor {
@@ -41,7 +40,8 @@ public class ClassProcessor {
         for (Method each : clazz.getMethods()) {
             EventListener el = each.getAnnotation(EventListener.class);
             if (el != null) {
-                eventHandlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each), null, false, false, null));
+                eventHandlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each),
+                        null, false, false, null));
             }
         }
         return new MetaSubscriber(clazz, null, eventHandlers);
@@ -49,10 +49,12 @@ public class ClassProcessor {
 
     private MetaAggregate handleAggregate(Class<?> aggregateClass) {
         Map<Class<? extends Annotation>, Iterable<Method>> annotated =
-                EventorReflections.getMethodsAnnotated(aggregateClass, EventHandler.class, CommandHandler.class, EventListener.class);
+                EventorReflections.getMethodsAnnotated(aggregateClass, EventHandler.class,
+                        CommandHandler.class, EventListener.class);
         return new MetaAggregate(aggregateClass,
                 extractAggregateCommandHandlers(annotated.get(CommandHandler.class)),
-                extractAggregateEventHandlers(EventorCollections.concat(annotated.get(EventHandler.class), annotated.get(EventListener.class))));
+                extractAggregateEventHandlers(
+                        concat(annotated.get(EventHandler.class), annotated.get(EventListener.class))));
     }
 
     private MetaSaga handleSaga(Class<?> sagaClass) {

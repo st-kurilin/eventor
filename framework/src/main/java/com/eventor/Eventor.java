@@ -1,12 +1,18 @@
 package com.eventor;
 
 import com.eventor.api.*;
-import com.eventor.internal.*;
+import com.eventor.internal.Akka;
+import com.eventor.internal.ClassProcessor;
+import com.eventor.internal.EventorCollections;
+import com.eventor.internal.EventorPreconditions;
 import com.eventor.internal.meta.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.eventor.internal.EventorCollections.newList;
 
@@ -28,27 +34,17 @@ public class Eventor implements CommandBus {
         this.commandBus = createCommandBus();
     }
 
-    public Eventor(final Iterable<Class<?>> aggregates,
-                   InstanceCreator instanceCreator,
-                   CommandBus commandBus,
-                   EventBus eventBus) {
-        this.instanceCreator = instanceCreator;
-        info = new ClassProcessor().apply(aggregates);
-        this.eventBus = eventBus;
-        this.commandBus = commandBus;
-    }
-
     private EventBus createEventBus() {
-        ArrayList<Listener> eventListeners = new ArrayList<Listener>();
-        for (final MetaAggregate eachMetaAggregate : info.aggregates) {
+        List<Listener> eventListeners = EventorCollections.newList();
+        for (MetaAggregate eachMetaAggregate : info.aggregates) {
             log.info("Register aggregate {} as event listener", eachMetaAggregate.origClass.getSimpleName());
             eventListeners.add(aggregateAsListener(eachMetaAggregate));
         }
-        for (final MetaSaga eachMetaSaga : info.sagas) {
+        for (MetaSaga eachMetaSaga : info.sagas) {
             log.info("Register saga {} as event listener", eachMetaSaga.origClass.getSimpleName());
             eventListeners.add(sagaAsListener(eachMetaSaga));
         }
-        for (final MetaSubscriber each : info.subscribers) {
+        for (MetaSubscriber each : info.subscribers) {
             log.info("Register event listener {}", each.origClass.getSimpleName());
             eventListeners.add(eventListenerAsListener(each));
         }
@@ -106,10 +102,7 @@ public class Eventor implements CommandBus {
                 Object sagaId = eachMetaHandler.extractId(cmd);
                 if (sagas.containsKey(sagaId)) {
                     Object saga = sagas.get(sagaId);
-                    Collection<?> commands = EventorCollections.toCollection(eachMetaHandler.execute(saga, cmd));
-                    for (Object message : commands) {
-                        commandBus.submit(message);
-                    }
+                    handleMessageBySaga(saga, eachMetaHandler, cmd);
                 }
             }
         }
@@ -163,7 +156,7 @@ public class Eventor implements CommandBus {
             if (eachMetaHandler.expected.equals(event.getClass())) {
                 if (eachMetaHandler.alwaysStart) {
                     Object saga = instanceCreator.newInstanceOf(eachMetaSaga.origClass);
-                    handleEventBySaga(saga, eachMetaHandler, event);
+                    handleMessageBySaga(saga, eachMetaHandler, event);
                     Object id = eachMetaSaga.retrieveId(saga);
                     EventorPreconditions.assume(!sagas.containsKey(id),
                             "Could not create saga with duplicate id [%s] on event [%s]",
@@ -172,15 +165,15 @@ public class Eventor implements CommandBus {
                     log.info("Saga with id {} registered", id);
                 } else {
                     for (Object saga : sagas.values()) {
-                        handleEventBySaga(saga, eachMetaHandler, event);
+                        handleMessageBySaga(saga, eachMetaHandler, event);
                     }
                 }
             }
         }
     }
 
-    private void handleEventBySaga(Object aggregate, MetaHandler eachMetaHandler, Object event) {
-        Collection<?> commands = eachMetaHandler.execute(aggregate, event);
+    private void handleMessageBySaga(Object saga, MetaHandler eachMetaHandler, Object msg) {
+        Collection<?> commands = eachMetaHandler.execute(saga, msg);
         for (Object message : commands) {
             commandBus.submit(message);
         }
