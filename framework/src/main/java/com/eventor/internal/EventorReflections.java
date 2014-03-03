@@ -33,7 +33,7 @@ public class EventorReflections {
         for (Class<? extends Annotation> annotation : annotations) {
             result.put(annotation, EventorCollections.<Method>newSet());
         }
-        for (Method method : clazz.getMethods()) {
+        for (Method method : clazz.getDeclaredMethods()) {
             for (Class<? extends Annotation> annotation : annotations) {
                 if (method.getAnnotation(annotation) != null) {
                     result.get(annotation).add(method);
@@ -109,6 +109,7 @@ public class EventorReflections {
 
     public static Collection<?> invoke(Object obj, Method m, Object arg) {
         try {
+            if (!m.isAccessible()) m.setAccessible(true);
             return EventorCollections.toCollection(m.invoke(obj, arg));
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);

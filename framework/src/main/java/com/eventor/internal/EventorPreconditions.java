@@ -6,4 +6,11 @@ public class EventorPreconditions {
             throw new IllegalStateException(String.format(str, arg));
         }
     }
+
+    public static <T> T assumeNotNull(T obj, String str, Object... arg) {
+        if (obj == null) {
+            throw new IllegalStateException(String.format(str, arg));
+        }
+        return obj;
+    }
 }

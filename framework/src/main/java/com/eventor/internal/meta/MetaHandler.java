@@ -30,6 +30,7 @@ public class MetaHandler {
     }
 
     public Object extractId(Object obj) {
+        if (idField == null) return null;
         return EventorReflections.retrieveNamedValue(obj, idField);
     }
 }

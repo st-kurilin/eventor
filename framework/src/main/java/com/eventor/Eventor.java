@@ -4,7 +4,6 @@ import com.eventor.api.*;
 import com.eventor.internal.Akka;
 import com.eventor.internal.ClassProcessor;
 import com.eventor.internal.EventorCollections;
-import com.eventor.internal.EventorPreconditions;
 import com.eventor.internal.meta.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.eventor.internal.EventorCollections.newList;
+import static com.eventor.internal.EventorPreconditions.assume;
+import static com.eventor.internal.EventorPreconditions.assumeNotNull;
 
 public class Eventor implements CommandBus {
     private final Info info;
@@ -82,17 +83,28 @@ public class Eventor implements CommandBus {
         for (MetaHandler eachMetaHandler : eachMetaAggregate.commandHandlers) {
             if (eachMetaHandler.expected.equals(cmd.getClass())) {
                 Object aggregateId = eachMetaHandler.extractId(cmd);
-                if (aggregates.containsKey(aggregateId)) {
-                    Object aggregate = aggregates.get(aggregateId);
-                    Collection<?> events = EventorCollections.toCollection(eachMetaHandler.execute(aggregate, cmd));
-                    for (Object eachEvent : events) {
-                        handleEventByAggregate(aggregate, eachEvent);
-                    }
-                    for (Object eachEvent : events) {
-                        eventBus.publish(eachEvent);
+                if (aggregateId == null && eachMetaHandler.alwaysStart) {
+                    Object aggregate = instanceCreator.newInstanceOf(eachMetaAggregate.origClass);
+                    handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
+                    saveAggregate(eachMetaAggregate, aggregate, cmd);
+                } else {
+                    if (aggregates.containsKey(aggregateId)) {
+                        Object aggregate = aggregates.get(aggregateId);
+                        handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
                     }
                 }
             }
+        }
+    }
+
+    private void handleCmdByAggregate(Object cmd, MetaHandler eachMetaHandler, Object aggregate) {
+        Collection<?> events = EventorCollections.toCollection(eachMetaHandler.execute(aggregate, cmd));
+        log.debug("Aggregate {} produced {} while handling cmd {}", aggregate, events, cmd);
+        for (Object eachEvent : events) {
+            handleEventByAggregate(aggregate, eachEvent);
+        }
+        for (Object eachEvent : events) {
+            eventBus.publish(eachEvent);
         }
     }
 
@@ -120,23 +132,23 @@ public class Eventor implements CommandBus {
         Class<?> actualClass = aggregate.getClass();
         for (MetaAggregate metaAggregate : info.aggregates) {
             if (metaAggregate.origClass.equals(actualClass)) {
-                handleEventByAggregate(metaAggregate, event);
+                for (MetaHandler eachMetaHandler : metaAggregate.eventHandlers) {
+                    if (eachMetaHandler.expected.equals(event.getClass())) {
+                        handleEventByAggregate(aggregate, eachMetaHandler, event);
+                    }
+                }
             }
         }
     }
 
     private void handleEventByAggregate(final MetaAggregate eachMetaAggregate, final Object event) {
-        for (final MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
+        for (MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
             if (eachMetaHandler.expected.equals(event.getClass())) {
+                log.debug("Event {} will be handled by instances of {}", event, eachMetaAggregate.origClass);
                 if (eachMetaHandler.alwaysStart) {
                     Object aggregate = instanceCreator.newInstanceOf(eachMetaAggregate.origClass);
                     handleEventByAggregate(aggregate, eachMetaHandler, event);
-                    Object id = eachMetaAggregate.retrieveId(aggregate);
-                    EventorPreconditions.assume(!aggregates.containsKey(id),
-                            "Could not create aggregate with duplicate id [%s] on event [%s]",
-                            id, event);
-                    aggregates.put(id, aggregate);
-                    log.info("Aggregate with id {} registered", id);
+                    saveAggregate(eachMetaAggregate, aggregate, event);
                 } else {
                     for (Object aggregate : aggregates.values()) {
                         handleEventByAggregate(aggregate, eachMetaHandler, event);
@@ -146,7 +158,18 @@ public class Eventor implements CommandBus {
         }
     }
 
+    private void saveAggregate(MetaAggregate eachMetaAggregate, Object aggregate, Object message) {
+        Object id = eachMetaAggregate.retrieveId(aggregate);
+        assumeNotNull(id, "Aggregate id could not be null");
+        assume(!aggregates.containsKey(id),
+                "Could not create aggregate with duplicate id [%s] on [%s]",
+                id, message);
+        aggregates.put(id, aggregate);
+        log.info("Aggregate with id {} registered", id);
+    }
+
     private void handleEventByAggregate(Object aggregate, MetaHandler eachMetaHandler, Object event) {
+        log.debug("Handle event {} by aggregate {}", event, aggregate);
         Collection<?> res = eachMetaHandler.execute(aggregate, event);
         if (!res.isEmpty()) throw new RuntimeException("Void expected");
     }
@@ -158,7 +181,7 @@ public class Eventor implements CommandBus {
                     Object saga = instanceCreator.newInstanceOf(eachMetaSaga.origClass);
                     handleMessageBySaga(saga, eachMetaHandler, event);
                     Object id = eachMetaSaga.retrieveId(saga);
-                    EventorPreconditions.assume(!sagas.containsKey(id),
+                    assume(!sagas.containsKey(id),
                             "Could not create saga with duplicate id [%s] on event [%s]",
                             id, event);
                     sagas.put(id, saga);
