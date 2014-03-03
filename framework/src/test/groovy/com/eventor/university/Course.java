@@ -6,27 +6,28 @@ import com.eventor.api.annotations.*;
 public class Course {
     @Id
     private String id;
+
     private boolean solved;
 
-    @EventHandler
+    @EventListener
     @Start
     public void on(CourseRegistered evt) {
         id = evt.courseId;
     }
 
     @CommandHandler
-    public Object on(@IdIn("courseId") SubmitResult cmd) {
-        if (cmd.answers.length != 5) {
+    public Object on(@IdIn("courseId") SubmitAnswer cmd) {
+        if (cmd.answer.length != 5) {
             throw new RuntimeException("Validation failed");
         }
         int rightAnswers = 0;
-        for (int i = 0; i < cmd.answers.length; i++) {
-            if (cmd.answers[i] == 42) {
+        for (int i = 0; i < cmd.answer.length; i++) {
+            if (cmd.answer[i] == 42) {
                 rightAnswers++;
             }
         }
         if (rightAnswers == 0) {
-            return new FailedOnCourseResultsSubmition(cmd.courseId, cmd.studentId);
+            return new FailedOnCourseResultsSubmission(cmd.courseId, cmd.studentId);
         }
         if (solved) {
             return new CourseResultsSubmitted(cmd.courseId, cmd.studentId, rightAnswers * 20);
@@ -36,7 +37,25 @@ public class Course {
         }
     }
 
-    @EventHandler
+    @CommandHandler
+    public Object on(@IdIn("courseId") StartFinalExam cmd) {
+        return new FinalExamStarted(cmd.courseId, cmd.studentId, 3);
+    }
+
+    @CommandHandler
+    public Object on(@IdIn("courseId") GraduateExam cmd) {
+        int rightAnswers = 0;
+        for (int[] answer : cmd.answers) {
+            for (int value : answer) {
+                if (value == 42) {
+                    rightAnswers++;
+                }
+            }
+        }
+        return new FinalExamSubmitted(cmd.courseId, cmd.studentId, (rightAnswers * 20) / 3);
+    }
+
+    @EventListener
     public void on(Object e) {
     }
 }

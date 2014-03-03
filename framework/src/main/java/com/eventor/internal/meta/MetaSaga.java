@@ -1,5 +1,8 @@
 package com.eventor.internal.meta;
 
+import com.eventor.api.annotations.Id;
+import com.eventor.internal.EventorReflections;
+
 import java.util.Set;
 
 public class MetaSaga extends MetaSubscriber {
@@ -8,17 +11,8 @@ public class MetaSaga extends MetaSubscriber {
         super(origClass, commandHandlers, eventHandlers);
     }
 
-    public static class KeyLink {
-        public final Class<?> class1;
-        public final String field1;
-        public final Class<?> class2;
-        public final String field2;
+    public Object retrieveId(Object saga) {
+        return EventorReflections.retrieveAnnotatedValue(saga, Id.class);
 
-        public KeyLink(Class<?> class1, String field1, Class<?> class2, String field2) {
-            this.class1 = class1;
-            this.field1 = field1;
-            this.class2 = class2;
-            this.field2 = field2;
-        }
     }
 }

@@ -10,7 +10,6 @@ import java.util.Set;
 public class CourseStat {
     private Map<String, Integer> results = new HashMap<String, Integer>();
 
-
     public Set<String> allCourses() {
         return results.keySet();
     }
