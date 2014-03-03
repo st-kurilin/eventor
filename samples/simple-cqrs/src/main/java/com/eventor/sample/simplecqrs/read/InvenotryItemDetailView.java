@@ -5,6 +5,7 @@ import com.eventor.sample.simplecqrs.event.*;
 
 import java.util.UUID;
 
+@EventListener
 public class InvenotryItemDetailView {
     @EventListener
     public void on(InventoryItemCreated message) {

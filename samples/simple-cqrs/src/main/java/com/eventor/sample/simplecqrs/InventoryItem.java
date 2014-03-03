@@ -6,6 +6,7 @@ import com.eventor.sample.simplecqrs.event.*;
 
 import java.util.UUID;
 
+@Aggregate
 public class InventoryItem {
     private boolean activated;
     @Id
