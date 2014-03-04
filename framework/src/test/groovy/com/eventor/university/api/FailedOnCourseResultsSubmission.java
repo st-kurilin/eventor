@@ -1,4 +1,4 @@
-package com.eventor.university;
+package com.eventor.university.api;
 
 public class FailedOnCourseResultsSubmission {
     public final String courseId;

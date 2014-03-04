@@ -1,6 +1,14 @@
 package com.eventor
 
-import com.eventor.university.*
+import com.eventor.university.api.CourseRegistered
+import com.eventor.university.api.StartFinalExam
+import com.eventor.university.api.SubmitAnswer
+import com.eventor.university.api.SubmitPartAnswer
+import com.eventor.university.domain.Course
+import com.eventor.university.domain.CourseRegistrator
+import com.eventor.university.domain.ExamGraduating
+import com.eventor.university.view.CourseStat
+import com.eventor.university.view.Grades
 import org.junit.runner.RunWith
 import org.spockframework.runtime.Sputnik
 import spock.lang.Specification

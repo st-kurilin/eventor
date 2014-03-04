@@ -1,6 +1,7 @@
-package com.eventor.university;
+package com.eventor.university.domain;
 
 import com.eventor.api.EventBus;
+import com.eventor.university.api.CourseRegistered;
 
 public class CourseRegistrator {
     public EventBus eventBus;

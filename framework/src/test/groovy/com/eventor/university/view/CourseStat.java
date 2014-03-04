@@ -1,6 +1,8 @@
-package com.eventor.university;
+package com.eventor.university.view;
 
 import com.eventor.api.annotations.EventListener;
+import com.eventor.university.api.CourseRegistered;
+import com.eventor.university.api.CourseResultsSubmitted;
 
 import java.util.HashMap;
 import java.util.Map;

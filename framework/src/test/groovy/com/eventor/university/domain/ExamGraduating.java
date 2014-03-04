@@ -1,6 +1,9 @@
-package com.eventor.university;
+package com.eventor.university.domain;
 
 import com.eventor.api.annotations.*;
+import com.eventor.university.api.FinalExamStarted;
+import com.eventor.university.api.GraduateExam;
+import com.eventor.university.api.SubmitPartAnswer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +25,10 @@ public class ExamGraduating {
 
     @CommandHandler
     public Object on(@IdIn("courseId") SubmitPartAnswer cmd) {
-        if (cmd.part <= 0 || cmd.part > parts) throw new IllegalArgumentException(cmd.part + " part doesn't exist at " + id + " exam");
-        if (submission.keySet().contains(cmd.part)) throw new IllegalStateException(cmd.part + " part is already submitted at " + id + " exam");
+        if (cmd.part <= 0 || cmd.part > parts)
+            throw new IllegalArgumentException(cmd.part + " part doesn't exist at " + id + " exam");
+        if (submission.keySet().contains(cmd.part))
+            throw new IllegalStateException(cmd.part + " part is already submitted at " + id + " exam");
         submission.put(cmd.part, cmd.answer);
         if (submission.size() == parts) {
             int[][] answers = new int[parts][];

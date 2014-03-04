@@ -1,4 +1,4 @@
-package com.eventor.university;
+package com.eventor.university.api;
 
 public class SubmitPartAnswer {
     public final String courseId;

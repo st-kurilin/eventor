@@ -1,6 +1,7 @@
-package com.eventor.university;
+package com.eventor.university.domain;
 
 import com.eventor.api.annotations.*;
+import com.eventor.university.api.*;
 
 @Aggregate
 public class Course {
