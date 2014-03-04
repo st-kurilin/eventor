@@ -7,7 +7,12 @@ Exploring idea of building CQRS + DDD + Event Sourcing framework with Akka using
 General View
 -------
 
-System should be build with clear separation of API, Domain and View.
+When you are going to build domain centric app it's good point to separate Domain API, Domain and View. Separating change requests from reading requests might be another good idea.  Putting this idea together with ideas of extracting Domain Events we will get us next abstract representation:
+
+
+![Abstract][1]
+
+  [1]: http://goo.gl/lSei7P
 
 *API* consist from *Commands* and *Events*. Commands are something we want to happen, and Events are something that has happened.
 
@@ -23,6 +28,7 @@ Let's consider sample for registration with email confirmation.
 
 ###API
 ####Commands
+
     
     public class RegisterRequest {
         public String email;
@@ -130,11 +136,16 @@ Let's consider sample for registration with email confirmation.
     
     
     @EventListener
+    @Singleton
     public class UsersList {
         private final List<String> users = new ArrayList<String>();
     
         @EventListener
         public void on(PersonRegistered event) {
             users.add(event.name);
+        }
+    
+        public List<String> getUsers() {
+            return users;
         }
     }
