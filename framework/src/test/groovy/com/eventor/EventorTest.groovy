@@ -73,6 +73,7 @@ class EventorTest extends Specification {
         Thread.sleep(100)
         cb.submit(new StartFinalExam("Algo-2014", "Ann"))
         cb.submit(new StartFinalExam("Math-2014", "Marina"))
+        Thread.sleep(100)
         cb.submit(new SubmitPartAnswer("Algo-2014", "Ann", [42, 0, 0, 0, 0] as int[], 1))
         cb.submit(new SubmitPartAnswer("Math-2014", "Marina", [42, 42, 42, 42, 42] as int[], 1))
         cb.submit(new SubmitPartAnswer("Algo-2014", "Ann", [42, 0, 0, 0, 0] as int[], 2))
