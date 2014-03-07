@@ -8,22 +8,22 @@ import se.citerus.dddsample.interfaces.booking.facade.BookingServiceFacade;
 
 public class CargoAdminControllerTest extends TestCase {
 
-  CargoAdminController controller;
-  BookingServiceFacade bookingServiceFacade;
-  MockHttpServletRequest request;
-  MockHttpServletResponse response;
+    CargoAdminController controller;
+    BookingServiceFacade bookingServiceFacade;
+    MockHttpServletRequest request;
+    MockHttpServletResponse response;
 
-  public CargoAdminControllerTest() {
-    controller = new CargoAdminController();
-    bookingServiceFacade = EasyMock.createMock(BookingServiceFacade.class);
-    controller.setBookingServiceFacade(bookingServiceFacade);
-  }
+    public CargoAdminControllerTest() {
+        controller = new CargoAdminController();
+        bookingServiceFacade = EasyMock.createMock(BookingServiceFacade.class);
+        controller.setBookingServiceFacade(bookingServiceFacade);
+    }
 
-  public void testAssignItinerary() throws Exception {
-    request = new MockHttpServletRequest("GET","assignItinerary.html");
-    response = new MockHttpServletResponse();
+    public void testAssignItinerary() throws Exception {
+        request = new MockHttpServletRequest("GET", "assignItinerary.html");
+        response = new MockHttpServletResponse();
 
-    controller.handleRequest(request, response);
-  }
+        controller.handleRequest(request, response);
+    }
 
 }

@@ -47,7 +47,9 @@ public class EntitySupportTest extends TestCase {
     }
 
     class OneAnnotationEntity extends EntitySupport<OneAnnotationEntity, String> {
-        private @Identity String id;
+        private
+        @Identity
+        String id;
 
         OneAnnotationEntity(String id) {
             this.id = id;
@@ -55,8 +57,12 @@ public class EntitySupportTest extends TestCase {
     }
 
     class TwoAnnotationsEntity extends EntitySupport<TwoAnnotationsEntity, String> {
-        private @Identity String id1 = "id1";
-        private @Identity String id2 = "id2";
+        private
+        @Identity
+        String id1 = "id1";
+        private
+        @Identity
+        String id2 = "id2";
     }
 
 }

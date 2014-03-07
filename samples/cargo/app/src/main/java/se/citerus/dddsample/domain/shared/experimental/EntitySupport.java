@@ -4,7 +4,6 @@ import java.lang.reflect.Field;
 
 /**
  * Base class for entities.
- *
  */
 public abstract class EntitySupport<T extends Entity, ID> implements Entity<T, ID> {
 
@@ -45,8 +44,8 @@ public abstract class EntitySupport<T extends Entity, ID> implements Entity<T, I
         if (identityField == null) {
             if (cls == Object.class) {
                 throw new IllegalStateException(
-                  "This class, or one of its superclasses, " +
-                  "must have a unique field annotated with " + Identity.class);
+                        "This class, or one of its superclasses, " +
+                                "must have a unique field annotated with " + Identity.class);
             } else {
                 return identityFieldLazyDetermination(cls.getSuperclass());
             }

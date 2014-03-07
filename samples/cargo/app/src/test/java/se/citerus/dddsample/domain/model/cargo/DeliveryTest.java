@@ -1,6 +1,7 @@
 package se.citerus.dddsample.domain.model.cargo;
 
 import junit.framework.TestCase;
+
 import static se.citerus.dddsample.domain.model.location.SampleLocations.HONGKONG;
 import static se.citerus.dddsample.domain.model.location.SampleLocations.NEWYORK;
 
@@ -8,11 +9,11 @@ import java.util.Date;
 
 public class DeliveryTest extends TestCase {
 
-  private Cargo cargo = new Cargo(new TrackingId("XYZ"), new RouteSpecification(HONGKONG, NEWYORK, new Date()));
+    private Cargo cargo = new Cargo(new TrackingId("XYZ"), new RouteSpecification(HONGKONG, NEWYORK, new Date()));
 
-  public void testToSilenceWarnings() throws Exception {
-    assertTrue(true);
-  }
+    public void testToSilenceWarnings() throws Exception {
+        assertTrue(true);
+    }
   
   /*
   public void testEvensOrderedByTimeOccured() throws Exception {
@@ -71,5 +72,5 @@ public class DeliveryTest extends TestCase {
     assertEquals(HAMBURG, delivery.lastKnownLocation());
   }
   */
-  
+
 }

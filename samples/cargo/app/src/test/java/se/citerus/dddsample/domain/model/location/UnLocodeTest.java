@@ -4,52 +4,53 @@ import junit.framework.TestCase;
 
 public class UnLocodeTest extends TestCase {
 
-  public void testNew() throws Exception {
-    assertValid("AA234");
-    assertValid("AAA9B");
-    assertValid("AAAAA");
-    
-    assertInvalid("AAAA");
-    assertInvalid("AAAAAA");
-    assertInvalid("AAAA");
-    assertInvalid("AAAAAA");
-    assertInvalid("22AAA");
-    assertInvalid("AA111");
-    assertInvalid(null);
-  }
+    public void testNew() throws Exception {
+        assertValid("AA234");
+        assertValid("AAA9B");
+        assertValid("AAAAA");
 
-  public void testIdString() throws Exception {
-    assertEquals("ABCDE", new UnLocode("AbcDe").idString());
-  }
+        assertInvalid("AAAA");
+        assertInvalid("AAAAAA");
+        assertInvalid("AAAA");
+        assertInvalid("AAAAAA");
+        assertInvalid("22AAA");
+        assertInvalid("AA111");
+        assertInvalid(null);
+    }
 
-  public void testEquals() throws Exception {
-    UnLocode allCaps = new UnLocode("ABCDE");
-    UnLocode mixedCase = new UnLocode("aBcDe");
+    public void testIdString() throws Exception {
+        assertEquals("ABCDE", new UnLocode("AbcDe").idString());
+    }
 
-    assertTrue(allCaps.equals(mixedCase));
-    assertTrue(mixedCase.equals(allCaps));
-    assertTrue(allCaps.equals(allCaps));
+    public void testEquals() throws Exception {
+        UnLocode allCaps = new UnLocode("ABCDE");
+        UnLocode mixedCase = new UnLocode("aBcDe");
 
-    assertFalse(allCaps.equals(null));
-    assertFalse(allCaps.equals(new UnLocode("FGHIJ")));
-  }
+        assertTrue(allCaps.equals(mixedCase));
+        assertTrue(mixedCase.equals(allCaps));
+        assertTrue(allCaps.equals(allCaps));
 
-  public void testHashCode() throws Exception {
-    UnLocode allCaps = new UnLocode("ABCDE");
-    UnLocode mixedCase = new UnLocode("aBcDe");
+        assertFalse(allCaps.equals(null));
+        assertFalse(allCaps.equals(new UnLocode("FGHIJ")));
+    }
 
-    assertEquals(allCaps.hashCode(), mixedCase.hashCode());  
-  }
-  
-  private void assertValid(String unlocode) {
-    new UnLocode(unlocode);
-  }
+    public void testHashCode() throws Exception {
+        UnLocode allCaps = new UnLocode("ABCDE");
+        UnLocode mixedCase = new UnLocode("aBcDe");
 
-  private void assertInvalid(String unlocode) {
-    try {
-      new UnLocode(unlocode);
-      fail("The combination [" + unlocode + "] is not a valid UnLocode");
-    } catch (IllegalArgumentException expected) {}
-  }
+        assertEquals(allCaps.hashCode(), mixedCase.hashCode());
+    }
+
+    private void assertValid(String unlocode) {
+        new UnLocode(unlocode);
+    }
+
+    private void assertInvalid(String unlocode) {
+        try {
+            new UnLocode(unlocode);
+            fail("The combination [" + unlocode + "] is not a valid UnLocode");
+        } catch (IllegalArgumentException expected) {
+        }
+    }
 
 }

@@ -26,50 +26,49 @@ import java.util.Map;
  * An adapter class, designed for the tracking use case, is used to wrap the domain model
  * to make it easier to work with in a web page rendering context. We do not want to apply
  * view rendering constraints to the design of our domain model, and the adapter
- * helps us shield the domain model classes. 
+ * helps us shield the domain model classes.
  * <p/>
  *
  * @eee se.citerus.dddsample.application.web.CargoTrackingViewAdapter
  * @see se.citerus.dddsample.interfaces.booking.web.CargoAdminController
- *
  */
 public final class CargoTrackingController extends SimpleFormController {
 
-  private CargoRepository cargoRepository;
-  private HandlingEventRepository handlingEventRepository;
+    private CargoRepository cargoRepository;
+    private HandlingEventRepository handlingEventRepository;
 
-  public CargoTrackingController() {
-    setCommandClass(TrackCommand.class);
-  }
-
-  @Override
-  protected ModelAndView onSubmit(final HttpServletRequest request, final HttpServletResponse response,
-                                  final Object command, final BindException errors) throws Exception {
-
-    final TrackCommand trackCommand = (TrackCommand) command;
-    final String trackingIdString = trackCommand.getTrackingId();
-
-    final TrackingId trackingId = new TrackingId(trackingIdString);
-    final Cargo cargo = cargoRepository.find(trackingId);
-
-    final Map<String, CargoTrackingViewAdapter> model = new HashMap<String, CargoTrackingViewAdapter>();
-    if (cargo != null) {
-      final MessageSource messageSource = getApplicationContext();
-      final Locale locale = RequestContextUtils.getLocale(request);
-      final List<HandlingEvent> handlingEvents = handlingEventRepository.lookupHandlingHistoryOfCargo(trackingId).distinctEventsByCompletionTime();
-      model.put("cargo", new CargoTrackingViewAdapter(cargo, messageSource, locale, handlingEvents));
-    } else {
-      errors.rejectValue("trackingId", "cargo.unknown_id", new Object[]{trackCommand.getTrackingId()}, "Unknown tracking id");
+    public CargoTrackingController() {
+        setCommandClass(TrackCommand.class);
     }
-    return showForm(request, response, errors, model);
-  }
 
-  public void setCargoRepository(CargoRepository cargoRepository) {
-    this.cargoRepository = cargoRepository;
-  }
+    @Override
+    protected ModelAndView onSubmit(final HttpServletRequest request, final HttpServletResponse response,
+                                    final Object command, final BindException errors) throws Exception {
 
-  public void setHandlingEventRepository(HandlingEventRepository handlingEventRepository) {
-    this.handlingEventRepository = handlingEventRepository;
-  }
+        final TrackCommand trackCommand = (TrackCommand) command;
+        final String trackingIdString = trackCommand.getTrackingId();
+
+        final TrackingId trackingId = new TrackingId(trackingIdString);
+        final Cargo cargo = cargoRepository.find(trackingId);
+
+        final Map<String, CargoTrackingViewAdapter> model = new HashMap<String, CargoTrackingViewAdapter>();
+        if (cargo != null) {
+            final MessageSource messageSource = getApplicationContext();
+            final Locale locale = RequestContextUtils.getLocale(request);
+            final List<HandlingEvent> handlingEvents = handlingEventRepository.lookupHandlingHistoryOfCargo(trackingId).distinctEventsByCompletionTime();
+            model.put("cargo", new CargoTrackingViewAdapter(cargo, messageSource, locale, handlingEvents));
+        } else {
+            errors.rejectValue("trackingId", "cargo.unknown_id", new Object[]{trackCommand.getTrackingId()}, "Unknown tracking id");
+        }
+        return showForm(request, response, errors, model);
+    }
+
+    public void setCargoRepository(CargoRepository cargoRepository) {
+        this.cargoRepository = cargoRepository;
+    }
+
+    public void setHandlingEventRepository(HandlingEventRepository handlingEventRepository) {
+        this.handlingEventRepository = handlingEventRepository;
+    }
 
 }
