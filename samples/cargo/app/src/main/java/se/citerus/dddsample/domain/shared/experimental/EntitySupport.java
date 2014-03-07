@@ -7,7 +7,7 @@ import java.lang.reflect.Field;
  */
 public abstract class EntitySupport<T extends Entity, ID> implements Entity<T, ID> {
 
-    private static Field identityField;
+    private Field identityField;
 
     @Override
     public final boolean sameIdentityAs(final T other) {

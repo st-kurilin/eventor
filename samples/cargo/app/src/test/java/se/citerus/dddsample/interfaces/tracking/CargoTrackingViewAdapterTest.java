@@ -15,6 +15,9 @@ import static se.citerus.dddsample.domain.model.voyage.SampleVoyages.CM001;
 import java.util.*;
 
 public class CargoTrackingViewAdapterTest extends TestCase {
+    {
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT+1:00")); //Quick fix for original tests
+    }
 
     public void testCreate() {
         Cargo cargo = new Cargo(new TrackingId("XYZ"), new RouteSpecification(HANGZOU, HELSINKI, new Date()));
