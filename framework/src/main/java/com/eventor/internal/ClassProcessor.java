@@ -52,7 +52,7 @@ public class ClassProcessor {
                 EventorReflections.getMethodsAnnotated(aggregateClass, EventHandler.class,
                         CommandHandler.class, EventListener.class);
         return new MetaAggregate(aggregateClass,
-                extractAggregateCommandHandlers(annotated.get(CommandHandler.class)),
+                extractAggregateCommandHandlers(aggregateClass, annotated.get(CommandHandler.class)),
                 extractAggregateEventHandlers(
                         concat(annotated.get(EventHandler.class), annotated.get(EventListener.class))));
     }
@@ -61,7 +61,7 @@ public class ClassProcessor {
         Map<Class<? extends Annotation>, Iterable<Method>> annotated =
                 EventorReflections.getMethodsAnnotated(sagaClass, EventListener.class, CommandHandler.class);
         return new MetaSaga(sagaClass,
-                extractSagaCommandHandlers(annotated.get(CommandHandler.class)),
+                extractSagaCommandHandlers(sagaClass, annotated.get(CommandHandler.class)),
                 extractSagaEventHandlers(annotated.get(EventListener.class)));
     }
 
@@ -74,14 +74,17 @@ public class ClassProcessor {
         return eventHandlers;
     }
 
-    private Set<MetaHandler> extractAggregateCommandHandlers(Iterable<Method> methods) {
+    private Set<MetaHandler> extractAggregateCommandHandlers(Class<?> aggregateClass, Iterable<Method> methods) {
         Set<MetaHandler> commandHandlers = newSet();
         for (Method each : methods) {
             Map<Class<? extends Annotation>, Annotation> annotations = EventorReflections.paramAnnotations(each, 0);
-            String idField = annotations.containsKey(IdIn.class)
-                    ? ((IdIn) annotations.get(IdIn.class)).value()
-                    : null;
-            commandHandlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each), null, false,
+            String idField = null;
+            Class<?> expected = EventorReflections.getSingleParamType(each);
+            if (annotations.containsKey(IdIn.class)) {
+                idField = ((IdIn) annotations.get(IdIn.class)).value();
+                EventorReflections.validateMark(aggregateClass, expected, idField);
+            }
+            commandHandlers.add(new MetaHandler(each, expected, null, false,
                     each.getAnnotation(Start.class) != null, idField));
         }
         return commandHandlers;
@@ -96,14 +99,17 @@ public class ClassProcessor {
         return eventHandlers;
     }
 
-    private Set<MetaHandler> extractSagaCommandHandlers(Iterable<Method> methods) {
+    private Set<MetaHandler> extractSagaCommandHandlers(Class<?> sagaClass, Iterable<Method> methods) {
         Set<MetaHandler> commandHandlers = newSet();
         for (Method each : methods) {
             Map<Class<? extends Annotation>, Annotation> annotations = EventorReflections.paramAnnotations(each, 0);
-            String idField = annotations.containsKey(IdIn.class)
-                    ? ((IdIn) annotations.get(IdIn.class)).value()
-                    : null;
-            commandHandlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each), null, false,
+            String idField = null;
+            Class<?> expected = EventorReflections.getSingleParamType(each);
+            if (annotations.containsKey(IdIn.class)) {
+                idField = ((IdIn) annotations.get(IdIn.class)).value();
+                EventorReflections.validateMark(sagaClass, expected, idField);
+            }
+            commandHandlers.add(new MetaHandler(each, expected, null, false,
                     each.getAnnotation(Start.class) != null, idField));
         }
         return commandHandlers;

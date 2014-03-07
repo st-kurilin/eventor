@@ -28,7 +28,8 @@ public class EventorReflections {
         return (Map) result;
     }
 
-    public static Map<Class<? extends Annotation>, Iterable<Method>> getMethodsAnnotated(Class<?> clazz, Class<? extends Annotation>... annotations) {
+    public static Map<Class<? extends Annotation>, Iterable<Method>> getMethodsAnnotated(
+            Class<?> clazz, Class<? extends Annotation>... annotations) {
         Map<Class<? extends Annotation>, Set<Method>> result = newMap();
         for (Class<? extends Annotation> annotation : annotations) {
             result.put(annotation, EventorCollections.<Method>newSet());
@@ -46,8 +47,8 @@ public class EventorReflections {
     public static Class<?> getSingleParamType(Method each) {
         Class<?>[] parameterTypes = each.getParameterTypes();
         if (parameterTypes.length != 1) {
-            throw new RuntimeException(String.format("Single argument method expected in place of %s", stringify(each)));
-
+            throw new RuntimeException(
+                    String.format("Single argument method expected in place of %s", stringify(each)));
         }
         return parameterTypes[0];
     }
@@ -95,15 +96,46 @@ public class EventorReflections {
 
     public static Object retrieveNamedValue(Object obj, String mark) {
         try {
+            String expectedGetterName = "get" + mark.substring(0, 1).toUpperCase() + mark.substring(1);
+            for (Method m : obj.getClass().getDeclaredMethods()) {
+                if (m.getName().equals(expectedGetterName) &&
+                        m.getParameterTypes().length == 0) {
+                    m.setAccessible(true);
+                    return m.invoke(obj);
+                }
+            }
             for (Field f : obj.getClass().getDeclaredFields()) {
                 if (f.getName().equals(mark)) {
                     f.setAccessible(true);
                     return f.get(obj);
                 }
             }
+            int dotIndex = mark.indexOf('.');
+            if (dotIndex != -1) {
+                String firstPart = mark.substring(0, dotIndex);
+                String secondPart = mark.substring(dotIndex + 1);
+                return retrieveNamedValue(retrieveNamedValue(obj, firstPart), secondPart);
+            }
             throw new RuntimeException(String.format("Fail while getting %s from %s", mark, obj));
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void validateMark(Class<?> classAnnotated, Class<?> classExpected, String mark) {
+        // verify that last char does not have ".",
+        // because "abc.".split("\\.") returns array that has only one "abc" item.
+        if (mark.contains(" ") || mark.charAt(mark.length() - 1) == '.') {
+            throw new IllegalArgumentException(String.format("Illegal IdIn specification [%s] in %s for %s",
+                    mark, classAnnotated.getName(), classExpected.getName()));
+        }
+        for (String each : mark.split("\\.")) {
+            if (each.isEmpty()) {
+                throw new IllegalArgumentException(String.format("Illegal IdIn specification [%s] in %s for %s",
+                        mark, classAnnotated.getName(), classExpected.getName()));
+            }
         }
     }
 
