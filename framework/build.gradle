@@ -1,18 +1,39 @@
 apply plugin: 'java'
 apply plugin: 'groovy'
+apply plugin: 'maven'
 
 sourceCompatibility = 1.6
-version = '1.0'
+version = '0.1-SNAPSHOT'
+group = 'com.eventor'
 
 repositories {
     mavenCentral()
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "file:///$rootDir/mvn-repo/")
+            pom.artifactId = 'eventor'
+        }
+    }
 }
 
 dependencies {
     compile "org.slf4j:slf4j-api:1.7.6"
     compile "com.typesafe.akka:akka-actor_2.10:2.2.3"
     groovy("org.codehaus.groovy:groovy-all:1.7.5")
-    compile "com.google.guava:guava:16.0"
+    testCompile "com.google.guava:guava:16.0"
     testCompile "org.spockframework:spock-core:0.6-groovy-1.7"
     testCompile "ch.qos.logback:logback-classic:1.0.13"
 }
