@@ -1,6 +1,5 @@
 apply plugin: 'java'
 apply plugin: 'groovy'
-apply plugin: 'maven'
 
 sourceCompatibility = 1.6
 version = '0.1-SNAPSHOT'
@@ -8,25 +7,6 @@ group = 'com.eventor'
 
 repositories {
     mavenCentral()
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives jar
-    archives sourcesJar
-}
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(url: "file:///$rootDir/mvn-repo/")
-            pom.artifactId = 'eventor'
-        }
-    }
 }
 
 dependencies {

@@ -9,7 +9,6 @@ repositories {
 
 dependencies {
     compile project(':framework')
-
     compile project(':integration:guice')
     compile 'com.google.guava:guava:16.0.1'
     compile 'org.reflections:reflections:0.9.9-RC1'
