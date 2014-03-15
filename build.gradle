@@ -3,7 +3,7 @@ import java.nio.charset.Charset
 apply plugin: 'java'
 
 sourceCompatibility = 1.6
-version = '1.0'
+
 
 task wrapper(type: Wrapper) {
     gradleVersion = '1.8'
@@ -14,8 +14,9 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.11'
+subprojects {
+    group = 'com.eventor'
+    version = '0.1-SNAPSHOT'
 }
 
 task generateReadme << {
@@ -41,10 +42,12 @@ task generateReadme << {
     inp.close()
 }
 
-[[':framework', 'eventor'], [':integration:guice', 'guice'], [':test-framework', 'test-framework']].each { def projName, artifactId ->
-	project(projName) {
-		apply plugin: 'java'
-		apply plugin: 'maven'
+[[':framework', 'eventor'],
+        [':integration:guice', 'guice'],
+        [':test-framework', 'test-framework']].each { def projName, artifactId ->
+    project(projName) {
+        apply plugin: 'java'
+        apply plugin: 'maven'
 
 		task sourcesJar(type: Jar, dependsOn: classes) {
 			classifier = 'sources'

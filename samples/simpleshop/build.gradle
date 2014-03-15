@@ -1,7 +1,6 @@
 apply plugin: 'java'
 
 sourceCompatibility = 1.6
-version = '1.0'
 
 repositories {
     mavenCentral()
@@ -12,6 +11,7 @@ dependencies {
     compile project(':integration:guice')
     compile 'com.google.guava:guava:16.0.1'
     compile 'org.reflections:reflections:0.9.9-RC1'
+
     testCompile project(':test-framework')
     testCompile group: 'junit', name: 'junit', version: '4.11'
     testCompile "ch.qos.logback:logback-classic:1.0.13"
