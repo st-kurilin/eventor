@@ -7,6 +7,6 @@ repositories {
 }
 
 dependencies {
-    compile project(':framework')
+    compile project(':eventor')
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }

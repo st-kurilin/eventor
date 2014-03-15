@@ -42,10 +42,8 @@ task generateReadme << {
     inp.close()
 }
 
-[[':framework', 'eventor'],
-        [':integration:guice', 'guice'],
-        [':test-framework', 'test-framework']].each { def projName, artifactId ->
-    project(projName) {
+[':eventor', ':integration:guice', ':test-framework'].each {
+    project(it) {
         apply plugin: 'java'
         apply plugin: 'maven'
 
@@ -58,7 +56,6 @@ task generateReadme << {
 			repositories {
 				mavenDeployer {
 					repository(url: "file:///$rootDir/mvn-repo/")
-					pom.artifactId = artifactId
 				}
 			}
 		}
