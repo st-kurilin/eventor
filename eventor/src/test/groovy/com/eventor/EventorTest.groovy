@@ -1,5 +1,6 @@
 package com.eventor
 
+import com.eventor.impl.SimpleInstanceCreator
 import com.eventor.university.api.CourseRegistered
 import com.eventor.university.api.StartFinalExam
 import com.eventor.university.api.SubmitAnswer

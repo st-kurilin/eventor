@@ -19,11 +19,11 @@ subprojects {
     version = '0.1-SNAPSHOT'
 }
 
-task generateReadme << {
+def process(file) {
     def includePrefix = "@include "
-    def inps = new FileInputStream("README.template.md");
+    def inps = new FileInputStream("${file}.template.md");
     def inp = new BufferedReader(new InputStreamReader(inps, Charset.forName("UTF-8")));
-    PrintWriter out = new PrintWriter(new FileWriter("README.md"));
+    PrintWriter out = new PrintWriter(new FileWriter("${file}.md"));
     def line
     while ((line = inp.readLine()) != null) {
         if (line.startsWith(includePrefix)) {
@@ -42,27 +42,36 @@ task generateReadme << {
     inp.close()
 }
 
+task generateReadme << {
+    process('README')
+}
+
+task generateDocs << {
+    process('./documentation/getting-started')
+}
+
+
 [':eventor', ':integration:guice', ':test-framework'].each {
     project(it) {
         apply plugin: 'java'
         apply plugin: 'maven'
 
-		task sourcesJar(type: Jar, dependsOn: classes) {
-			classifier = 'sources'
-			from sourceSets.main.allSource
-		}
+        task sourcesJar(type: Jar, dependsOn: classes) {
+            classifier = 'sources'
+            from sourceSets.main.allSource
+        }
 
-		uploadArchives {
-			repositories {
-				mavenDeployer {
-					repository(url: "file:///$rootDir/mvn-repo/")
-				}
-			}
-		}
+        uploadArchives {
+            repositories {
+                mavenDeployer {
+                    repository(url: "file:///$rootDir/mvn-repo/")
+                }
+            }
+        }
 
-		artifacts {
-			archives jar
-			archives sourcesJar
-		}
-	}
+        artifacts {
+            archives jar
+            archives sourcesJar
+        }
+    }
 }

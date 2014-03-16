@@ -1,4 +1,4 @@
-package com.eventor;
+package com.eventor.impl;
 
 import com.eventor.api.InstanceCreator;
 
