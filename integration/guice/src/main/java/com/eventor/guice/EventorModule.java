@@ -44,12 +44,12 @@ public final class EventorModule extends AbstractModule {
         }
 
         @Override
-        public <T> T getInstanceOf(Class<T> clazz) {
+        public <T> T findInstanceOf(Class<T> clazz) {
             return injector.getInstance(clazz);
         }
 
         @Override
-        public <T> T newInstanceOf(Class<T> clazz) {
+        public <T> T findOrCreateInstanceOf(Class<T> clazz, boolean isExpectedToBeSingleton) {
             return injector.getInstance(clazz);
         }
     }

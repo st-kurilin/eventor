@@ -9,26 +9,43 @@ public class SimpleInstanceCreator implements InstanceCreator {
     public Map<Class<?>, Object> instancies = new HashMap<Class<?>, Object>();
 
     @Override
-    public <T> T newInstanceOf(Class<T> clazz) {
-        try {
-            System.out.println("Create instance of " + clazz.getSimpleName());
-            T newInstance = clazz.newInstance();
-            instancies.put(clazz, newInstance);
-            return newInstance;
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
+    public synchronized <T> T findInstanceOf(Class<T> clazz) {
+        Object result = findInstance(clazz);
+        if (result == null) {
+            throw new IllegalStateException("Could not find instance for " + clazz);
         }
+        return (T) result;
     }
 
-    @Override
-    public synchronized <T> T getInstanceOf(Class<T> clazz) {
+    private <T> T findInstance(Class<T> clazz) {
         for (Class<?> each : instancies.keySet()) {
             if (clazz.isAssignableFrom(each)) {
                 return (T) instancies.get(each);
             }
         }
-        return newInstanceOf(clazz);
+        return null;
+    }
+
+    @Override
+    public <T> T findOrCreateInstanceOf(Class<T> clazz, boolean isExpectedToBeSingleton) {
+        Object result = findInstance(clazz);
+        if (result == null) {
+            result = createInstance(clazz);
+            if (isExpectedToBeSingleton) {
+                instancies.put(clazz, result);
+            }
+        }
+        return (T) result;
+
+    }
+
+    private <T> T createInstance(Class<T> clazz) {
+        try {
+            return clazz.newInstance();
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -11,15 +11,14 @@ public class Runner {
         InstanceCreator instanceCreator = new SimpleInstanceCreator();
         Eventor eventor = new EventorBuilder()
                 .withInstanceCreator(instanceCreator)
-                .addClasses(CreditRequestsCommandHandler.class)
+                .addClasses(CreditRequestsCommandHandler.class, CreditDecisionStat.class)
                 .build();
-        CreditDecisionStat stat = instanceCreator.getInstanceOf(CreditDecisionStat.class);
 
-        for (int i = 1; i < 15; i++) {
+        for (int i = 1; i < 11; i++) {
             eventor.submit(new RequestCredit("U" + i, i * 100));
         }
         Thread.sleep(1000); //Let's wait for eventual consistency
-
+        CreditDecisionStat stat = instanceCreator.findInstanceOf(CreditDecisionStat.class);
         System.out.println(stat.getAcceptanceRate());
     }
 }

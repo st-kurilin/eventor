@@ -61,6 +61,10 @@ public class Eventor implements CommandBus {
 
     private CommandBus createCommandBus() {
         List<Listener> commandHandlers = newList();
+        for (final MetaSubscriber eachCommandHandler : info.subscribers) {
+            log.info("Register command handler {}", eachCommandHandler.origClass.getSimpleName());
+            commandHandlers.add(commandHandlerAsCommandHandlerAsListener(eachCommandHandler));
+        }
         for (final MetaAggregate eachMetaAggregate : info.aggregates) {
             log.info("Register aggregate {} as command handler", eachMetaAggregate.origClass.getSimpleName());
             commandHandlers.add(aggregateAsCommandHandlerAsListener(eachMetaAggregate));
@@ -84,7 +88,7 @@ public class Eventor implements CommandBus {
             if (eachMetaHandler.expected.equals(cmd.getClass())) {
                 Object aggregateId = eachMetaHandler.extractId(cmd);
                 if (aggregateId == null && eachMetaHandler.alwaysStart) {
-                    Object aggregate = instanceCreator.newInstanceOf(eachMetaAggregate.origClass);
+                    Object aggregate = instanceCreator.findOrCreateInstanceOf(eachMetaAggregate.origClass, false);
                     handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
                     saveAggregate(eachMetaAggregate, aggregate, cmd);
                 } else {
@@ -120,10 +124,23 @@ public class Eventor implements CommandBus {
         }
     }
 
-    private void handleEventByEvenHandler(MetaSubscriber eventListener, Object event) {
+    private void handleEventByEvenListener(MetaSubscriber eventListener, Object event) {
         for (MetaHandler eachMetaHandler : eventListener.eventHandlers) {
             if (eachMetaHandler.expected.equals(event.getClass())) {
-                eachMetaHandler.execute(instanceCreator.getInstanceOf(eventListener.origClass), event);
+                Object l = instanceCreator.findOrCreateInstanceOf(eventListener.origClass, true);
+                eachMetaHandler.execute(l, event);
+            }
+        }
+    }
+
+    private void handleCommandByCommandHandler(MetaSubscriber eachCommandHandler, Object cmd) {
+        for (MetaHandler eachMetaHandler : eachCommandHandler.commandHandlers) {
+            if (eachMetaHandler.expected.equals(cmd.getClass())) {
+                Object ch = instanceCreator.findOrCreateInstanceOf(eachCommandHandler.origClass, true);
+                Collection<?> result = eachMetaHandler.execute(ch, cmd);
+                for (Object event : result) {
+                    eventBus.publish(event);
+                }
             }
         }
     }
@@ -146,7 +163,7 @@ public class Eventor implements CommandBus {
             if (eachMetaHandler.expected.equals(event.getClass())) {
                 log.debug("Event {} will be handled by instances of {}", event, eachMetaAggregate.origClass);
                 if (eachMetaHandler.alwaysStart) {
-                    Object aggregate = instanceCreator.newInstanceOf(eachMetaAggregate.origClass);
+                    Object aggregate = instanceCreator.findOrCreateInstanceOf(eachMetaAggregate.origClass, false);
                     handleEventByAggregate(aggregate, eachMetaHandler, event);
                     saveAggregate(eachMetaAggregate, aggregate, event);
                 } else {
@@ -178,7 +195,7 @@ public class Eventor implements CommandBus {
         for (MetaHandler eachMetaHandler : eachMetaSaga.eventHandlers) {
             if (eachMetaHandler.expected.equals(event.getClass())) {
                 if (eachMetaHandler.alwaysStart) {
-                    Object saga = instanceCreator.newInstanceOf(eachMetaSaga.origClass);
+                    Object saga = instanceCreator.findOrCreateInstanceOf(eachMetaSaga.origClass, false);
                     handleMessageBySaga(saga, eachMetaHandler, event);
                     Object id = eachMetaSaga.retrieveId(saga);
                     assume(!sagas.containsKey(id),
@@ -193,6 +210,16 @@ public class Eventor implements CommandBus {
                 }
             }
         }
+    }
+
+    private Listener commandHandlerAsCommandHandlerAsListener(final MetaSubscriber eachCommandHandler) {
+        return new Listener() {
+            @Override
+            public void apply(Object cmd) {
+                log.info("Command {} will be handled by command handlers", cmd);
+                handleCommandByCommandHandler(eachCommandHandler, cmd);
+            }
+        };
     }
 
     private void handleMessageBySaga(Object saga, MetaHandler eachMetaHandler, Object msg) {
@@ -227,7 +254,7 @@ public class Eventor implements CommandBus {
             @Override
             public void apply(Object event) {
                 log.info("Event {} will be handled by event listener {}", event, each.origClass.getSimpleName());
-                handleEventByEvenHandler(each, event);
+                handleEventByEvenListener(each, event);
             }
         };
     }

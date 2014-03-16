@@ -16,13 +16,6 @@ import spock.lang.Specification
 
 @RunWith(Sputnik)
 class EventorTest extends Specification {
-    def "Event should produce aggregates"() {
-        when:
-        eb.publish(new CourseRegistered("Math-01"))
-        Thread.sleep(500)
-        then:
-        instanceCreator.instancies.containsKey(Course)
-    }
 
     def "Event listeners should receive messages from aggregates"() {
         when:
@@ -31,7 +24,7 @@ class EventorTest extends Specification {
         cb.submit(new SubmitAnswer("Math-01", "Poll", [42, 2, 42, 1, 3] as int[]))
         Thread.sleep(500)
         then:
-        instanceCreator.getInstanceOf(CourseStat).bestResultForCourse("Math-01") == 40
+        instanceCreator.findInstanceOf(CourseStat).bestResultForCourse("Math-01") == 40
     }
 
     def "Command handlers can handle commands and produce events directly"() {
@@ -39,7 +32,7 @@ class EventorTest extends Specification {
         ch.registerCourse("Algo-2013")
         Thread.sleep(500)
         then:
-        instanceCreator.getInstanceOf(CourseStat).allCourses().contains("Algo-2013")
+        instanceCreator.findInstanceOf(CourseStat).allCourses().contains("Algo-2013")
     }
 
     def "Aggregates maintain state between interactions"() {
@@ -50,8 +43,8 @@ class EventorTest extends Specification {
         cb.submit(new SubmitAnswer("Algo-2013", "Poll", [42, 42, 42, 42, 42] as int[]))
         Thread.sleep(500)
         then:
-        instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
-        instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Poll") == 100
+        instanceCreator.findInstanceOf(Grades).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
+        instanceCreator.findInstanceOf(Grades).grade("Algo-2013", "Poll") == 100
     }
 
     def "Aggregates have independent state"() {
@@ -63,8 +56,8 @@ class EventorTest extends Specification {
         cb.submit(new SubmitAnswer("Math-2013", "Poll", [42, 42, 42, 42, 42] as int[]))
         Thread.sleep(500)
         then:
-        instanceCreator.getInstanceOf(Grades).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
-        instanceCreator.getInstanceOf(Grades).grade("Math-2013", "Poll") == 120
+        instanceCreator.findInstanceOf(Grades).grade("Algo-2013", "Bob") == 120 //extra bonus for first solution
+        instanceCreator.findInstanceOf(Grades).grade("Math-2013", "Poll") == 120
     }
 
     def "Sagas have independent state"() {
@@ -83,8 +76,8 @@ class EventorTest extends Specification {
         cb.submit(new SubmitPartAnswer("Math-2014", "Marina", [42, 42, 42, 42, 42] as int[], 3))
         Thread.sleep(500)
         then:
-        instanceCreator.getInstanceOf(Grades).grade("Algo-2014", "Ann") == 20
-        instanceCreator.getInstanceOf(Grades).grade("Math-2014", "Marina") == 100
+        instanceCreator.findInstanceOf(Grades).grade("Algo-2014", "Ann") == 20
+        instanceCreator.findInstanceOf(Grades).grade("Math-2014", "Marina") == 100
     }
 
     def "Saga should receive events and generate commands"() {
@@ -98,14 +91,14 @@ class EventorTest extends Specification {
         cb.submit(new SubmitPartAnswer("Bio-2014", "Alica", [42, 42, 42, 42, 0] as int[], 3))
         Thread.sleep(500)
         then:
-        instanceCreator.getInstanceOf(Grades).grade("Bio-2014", "Alica") == 80
+        instanceCreator.findInstanceOf(Grades).grade("Bio-2014", "Alica") == 80
     }
 
     def instanceCreator = new SimpleInstanceCreator()
     def eventor = new Eventor([ExamGraduating, Course, CourseStat, Grades], instanceCreator)
     def eb = eventor.getEventBus()
     def cb = eventor
-    def ch = instanceCreator.getInstanceOf(CourseRegistrator)
+    def ch = instanceCreator.findOrCreateInstanceOf(CourseRegistrator, true)
 
     def setup() {
         ch.eventBus = eb

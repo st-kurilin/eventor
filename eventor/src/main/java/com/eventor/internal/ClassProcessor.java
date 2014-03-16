@@ -5,12 +5,12 @@ import com.eventor.internal.meta.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import static com.eventor.internal.EventorCollections.concat;
 import static com.eventor.internal.EventorCollections.newSet;
+import static com.eventor.internal.EventorReflections.getClassesAnnotated;
 
 public class ClassProcessor {
     public Info apply(Iterable<Class<?>> classes) {
@@ -18,14 +18,14 @@ public class ClassProcessor {
         Set<MetaSubscriber> subscribers = newSet();
         Set<MetaSaga> sagas = newSet();
         Map<Class<? extends Annotation>, Iterable<Class<?>>> annotated =
-                EventorReflections.getClassesAnnotated(classes, Aggregate.class, EventListener.class, Saga.class);
+                getClassesAnnotated(classes, CommandHandler.class, Aggregate.class, EventListener.class, Saga.class);
         for (Class<?> each : annotated.get(Aggregate.class)) {
             aggregates.add(handleAggregate(each));
         }
         for (Class<?> each : annotated.get(Saga.class)) {
             sagas.add(handleSaga(each));
         }
-        for (Class<?> each : annotated.get(EventListener.class)) {
+        for (Class<?> each : concat(annotated.get(EventListener.class), annotated.get(CommandHandler.class))) {
             subscribers.add(handleSubscriber(each));
         }
         return new Info(
@@ -36,15 +36,24 @@ public class ClassProcessor {
     }
 
     private MetaSubscriber handleSubscriber(Class<?> clazz) {
-        HashSet<MetaHandler> eventHandlers = new HashSet<MetaHandler>();
+        Set<MetaHandler> handlers = newSet();
+        Set<MetaHandler> listener = newSet();
         for (Method each : clazz.getMethods()) {
             EventListener el = each.getAnnotation(EventListener.class);
+            CommandHandler ch = each.getAnnotation(CommandHandler.class);
+            EventorPreconditions.assume(ch == null || el == null,
+                    "Same method could not handle commands and events [%s.%s]", clazz, each);
+
             if (el != null) {
-                eventHandlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each),
+                listener.add(new MetaHandler(each, EventorReflections.getSingleParamType(each),
+                        null, false, false, null));
+            }
+            if (ch != null) {
+                handlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each),
                         null, false, false, null));
             }
         }
-        return new MetaSubscriber(clazz, null, eventHandlers);
+        return new MetaSubscriber(clazz, handlers, listener);
     }
 
     private MetaAggregate handleAggregate(Class<?> aggregateClass) {
