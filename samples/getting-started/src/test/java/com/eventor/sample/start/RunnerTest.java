@@ -16,7 +16,7 @@ public class RunnerTest {
     public void testMain() throws Exception {
         Runner.main(new String[]{});
 
-        String[] out = outContent.toString().split("\n");
+        String[] out = outContent.toString().split(System.getProperty("line.separator"));
         String lastLine = out[out.length - 1];
 
         assertEquals("90.0", lastLine);
