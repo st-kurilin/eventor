@@ -1,6 +1,7 @@
 package com.eventor.guice;
 
 import com.eventor.Eventor;
+import com.eventor.EventorBuilder;
 import com.eventor.api.CommandBus;
 import com.eventor.api.EventBus;
 import com.eventor.api.InstanceCreator;
@@ -23,7 +24,10 @@ public final class EventorModule extends AbstractModule {
     @Provides
     @Singleton
     public Eventor eventor(Injector injector) {
-        return new Eventor(classes, new GuiceInstanceCreator(injector));
+        return new EventorBuilder()
+                .addClasses(classes)
+                .withInstanceCreator(new GuiceInstanceCreator(injector))
+                .build();
     }
 
     @Provides

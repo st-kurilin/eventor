@@ -21,15 +21,16 @@ public class Eventor implements CommandBus {
     private final Info info;
     private final InstanceCreator instanceCreator;
     private final Akka akka = new Akka();
-    private final Map<Object, Object> aggregates = new HashMap<Object, Object>();
     private final Map<Object, Object> sagas = new HashMap<Object, Object>();
     private final CommandBus commandBus;
     private final EventBus eventBus;
+    private final AggregateRepository repository;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public Eventor(final Iterable<Class<?>> aggregates, final InstanceCreator instanceCreator) {
+    public Eventor(Iterable<Class<?>> aggregates, InstanceCreator instanceCreator, AggregateRepository repository) {
         this.instanceCreator = instanceCreator;
+        this.repository = repository;
         info = new ClassProcessor().apply(aggregates);
         this.eventBus = createEventBus();
         this.commandBus = createCommandBus();
@@ -92,8 +93,8 @@ public class Eventor implements CommandBus {
                     handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
                     saveAggregate(eachMetaAggregate, aggregate, cmd);
                 } else {
-                    if (aggregates.containsKey(aggregateId)) {
-                        Object aggregate = aggregates.get(aggregateId);
+                    Object aggregate = repository.getById(eachMetaAggregate.origClass, aggregateId);
+                    if (aggregate != null) {
                         handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
                     }
                 }
@@ -166,10 +167,6 @@ public class Eventor implements CommandBus {
                     Object aggregate = instanceCreator.findOrCreateInstanceOf(eachMetaAggregate.origClass, false);
                     handleEventByAggregate(aggregate, eachMetaHandler, event);
                     saveAggregate(eachMetaAggregate, aggregate, event);
-                } else {
-                    for (Object aggregate : aggregates.values()) {
-                        handleEventByAggregate(aggregate, eachMetaHandler, event);
-                    }
                 }
             }
         }
@@ -178,10 +175,7 @@ public class Eventor implements CommandBus {
     private void saveAggregate(MetaAggregate eachMetaAggregate, Object aggregate, Object message) {
         Object id = eachMetaAggregate.retrieveId(aggregate);
         assumeNotNull(id, "Aggregate id could not be null");
-        assume(!aggregates.containsKey(id),
-                "Could not create aggregate with duplicate id [%s] on [%s]",
-                id, message);
-        aggregates.put(id, aggregate);
+        repository.save(id, aggregate);
         log.info("Aggregate with id {} registered", id);
     }
 

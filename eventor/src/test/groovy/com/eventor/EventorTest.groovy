@@ -95,7 +95,10 @@ class EventorTest extends Specification {
     }
 
     def instanceCreator = new SimpleInstanceCreator()
-    def eventor = new Eventor([ExamGraduating, Course, CourseStat, Grades], instanceCreator)
+    def eventor = new EventorBuilder()
+            .addClasses(ExamGraduating, Course, CourseStat, Grades)
+            .withInstanceCreator(instanceCreator)
+            .build()
     def eb = eventor.getEventBus()
     def cb = eventor
     def ch = instanceCreator.findOrCreateInstanceOf(CourseRegistrator, true)
