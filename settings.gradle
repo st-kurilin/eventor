@@ -1,5 +1,5 @@
 rootProject.name = 'eventor-root'
-include 'eventor'
-include 'test-framework'
-include 'samples:simple-cqrs', 'samples:simpleshop', 'samples:getting-started', 'samples:cargo:app'
+include 'eventor', 'test-framework'
+include 'samples:getting-started', 'samples:tutorial'
+include 'samples:simple-cqrs', 'samples:simpleshop', 'samples:cargo:app'
 include 'integration:guice'

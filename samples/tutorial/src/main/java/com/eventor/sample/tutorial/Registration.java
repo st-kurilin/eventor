@@ -1,28 +1,30 @@
-package com.eventor.simpleshop.domain;
+package com.eventor.sample.tutorial;
 
 import com.eventor.api.Timeout;
 import com.eventor.api.annotations.*;
-import com.eventor.simpleshop.api.registration.ConfirmEmail;
-import com.eventor.simpleshop.api.registration.PersonRegistered;
-import com.eventor.simpleshop.api.registration.RegisterRequest;
 
 import java.util.concurrent.TimeUnit;
 
 //Registration Saga represents Registration with email confirmation process.
 @Saga
 public class Registration {
+    private SecurityService securityService;
     private String email;
     private String name;
-    private String password;
+    private String protectedPassword;
+
+    public Registration(SecurityService securityService) {
+        this.securityService = securityService;
+    }
 
     //Start registration process
     @Start
     @CommandHandler
-    public Timeout handle(@IdIn("email") RegisterRequest cmd) {
+    public Timeout handle(@IdIn("email") RequestRegistration cmd) {
         email = cmd.email;
         name = cmd.name;
-        password = cmd.password;
-        sendEmailWithToken(email, generateToken(email));
+        protectedPassword = securityService.protectPassword(email, cmd.password);
+        sendEmailWithToken(email, securityService.generateRegistrationToken(email));
         //hadntConfirmedForLongTime will be called in two weeks
         return new Timeout(14, TimeUnit.DAYS, new RegistrationTimeout());
     }
@@ -30,10 +32,11 @@ public class Registration {
     //Try to confirm email
     @CommandHandler
     public Object handle(@IdIn("email") ConfirmEmail cmd) {
-        if (validToken(cmd.email, cmd.token)) {
+        if (securityService.checkRegistrationToken(cmd.email, cmd.token)) {
             return new Object[]{
-                    new PersonRegistered(email, name, password),    //Generate Domain Event
-                    Finish.RESULT};                                 //Finish Registration Saga
+                    //TODO: should generate command instead of event
+                    new PersonRegistered(email, name, protectedPassword),    //Generate Domain Event
+                    Finish.RESULT};                                          //Finish Registration Saga
         }
         return null;
     }
@@ -50,14 +53,5 @@ public class Registration {
     //Fake email sender
     private void sendEmailWithToken(String email, String token) {
         System.out.println(String.format("Email with token [%s] send to [%s]", token, email));
-    }
-
-    //Dump security impl
-    private boolean validToken(String email, String token) {
-        return email.equals(token);
-    }
-
-    private String generateToken(String email) {
-        return email;
     }
 }

@@ -48,6 +48,7 @@ task generateReadme << {
 
 task generateDocs << {
     process('./documentation/getting-started')
+    process('./documentation/tutorial')
 }
 
 
