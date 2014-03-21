@@ -3,6 +3,7 @@ package com.eventor;
 import com.eventor.api.AggregateRepository;
 import com.eventor.api.InstanceCreator;
 import com.eventor.impl.InMemoryAggregateRepository;
+import com.eventor.impl.InMemorySagaStorage;
 import com.eventor.impl.SimpleInstanceCreator;
 
 import java.util.Arrays;
@@ -13,6 +14,7 @@ import static com.eventor.internal.EventorCollections.newSet;
 public class EventorBuilder {
     private InstanceCreator instanceCreator = new SimpleInstanceCreator();
     private AggregateRepository aggregateRepository = new InMemoryAggregateRepository();
+    private SagaStorage sagaStorage = new InMemorySagaStorage();
     private Set<Class<?>> classes = newSet();
 
     public EventorBuilder addClasses(Class<?>... classes) {
@@ -38,6 +40,6 @@ public class EventorBuilder {
     }
 
     public Eventor build() {
-        return new Eventor(classes, instanceCreator, aggregateRepository);
+        return new Eventor(classes, instanceCreator, aggregateRepository, sagaStorage);
     }
 }

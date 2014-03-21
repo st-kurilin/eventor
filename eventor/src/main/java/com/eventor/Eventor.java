@@ -9,9 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.eventor.internal.EventorCollections.newList;
 import static com.eventor.internal.EventorPreconditions.assume;
@@ -21,16 +19,17 @@ public class Eventor implements CommandBus {
     private final Info info;
     private final InstanceCreator instanceCreator;
     private final Akka akka = new Akka();
-    private final Map<Object, Object> sagas = new HashMap<Object, Object>();
     private final CommandBus commandBus;
     private final EventBus eventBus;
     private final AggregateRepository repository;
+    private final SagaStorage sagaStorage;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public Eventor(Iterable<Class<?>> aggregates, InstanceCreator instanceCreator, AggregateRepository repository) {
+    public Eventor(Iterable<Class<?>> aggregates, InstanceCreator instanceCreator, AggregateRepository repository, SagaStorage sagaStorage) {
         this.instanceCreator = instanceCreator;
         this.repository = repository;
+        this.sagaStorage = sagaStorage;
         info = new ClassProcessor().apply(aggregates);
         this.eventBus = createEventBus();
         this.commandBus = createCommandBus();
@@ -117,8 +116,9 @@ public class Eventor implements CommandBus {
         for (MetaHandler eachMetaHandler : eachMetaSaga.commandHandlers) {
             if (eachMetaHandler.expected.equals(cmd.getClass())) {
                 Object sagaId = eachMetaHandler.extractId(cmd);
-                if (sagas.containsKey(sagaId)) {
-                    Object saga = sagas.get(sagaId);
+
+                if (sagaStorage.contains(sagaId)) {
+                    Object saga = sagaStorage.find(eachMetaSaga.origClass, sagaId);
                     handleMessageBySaga(saga, eachMetaHandler, cmd);
                 }
             }
@@ -192,13 +192,15 @@ public class Eventor implements CommandBus {
                     Object saga = instanceCreator.findOrCreateInstanceOf(eachMetaSaga.origClass, false);
                     handleMessageBySaga(saga, eachMetaHandler, event);
                     Object id = eachMetaSaga.retrieveId(saga);
-                    assume(!sagas.containsKey(id),
+                    assume(!sagaStorage.contains(id),
                             "Could not create saga with duplicate id [%s] on event [%s]",
                             id, event);
-                    sagas.put(id, saga);
+                    sagaStorage.save(EventorCollections.toCollection(id), saga);
                     log.info("Saga with id {} registered", id);
                 } else {
-                    for (Object saga : sagas.values()) {
+                    Object sagaId = eachMetaHandler.extractId(event);
+                    if (sagaStorage.contains(sagaId)) {
+                        Object saga = sagaStorage.find(eachMetaSaga.origClass, sagaId);
                         handleMessageBySaga(saga, eachMetaHandler, event);
                     }
                 }

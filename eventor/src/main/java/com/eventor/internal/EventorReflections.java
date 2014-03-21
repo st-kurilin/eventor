@@ -142,7 +142,8 @@ public class EventorReflections {
     public static Collection<?> invoke(Object obj, Method m, Object arg) {
         try {
             if (!m.isAccessible()) m.setAccessible(true);
-            return EventorCollections.toCollection(m.invoke(obj, arg));
+            Object res = m.invoke(obj, arg);
+            return EventorCollections.toCollection(res);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
