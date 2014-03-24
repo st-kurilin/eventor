@@ -190,21 +190,18 @@ public class Eventor implements CommandBus {
     private void handleEventBySaga(final MetaSaga eachMetaSaga, final Object event) {
         for (MetaHandler eachMetaHandler : eachMetaSaga.eventHandlers) {
             if (eachMetaHandler.expected.equals(event.getClass())) {
-                if (eachMetaHandler.alwaysStart) {
+                Object sagaId = eachMetaHandler.extractId(event);
+                if (sagaStorage.contains(sagaId)) {
+                    handleMessageBySaga(sagaStorage.find(eachMetaSaga.origClass, sagaId), eachMetaHandler, event);
+                } else if (eachMetaHandler.alwaysStart) {
                     Object saga = instanceCreator.findOrCreateInstanceOf(eachMetaSaga.origClass, false);
                     handleMessageBySaga(saga, eachMetaHandler, event);
-                    Object id = eachMetaSaga.retrieveId(saga);
+                    Object id = sagaId == null ? eachMetaSaga.retrieveId(saga) : sagaId;
                     assume(!sagaStorage.contains(id),
                             "Could not create saga with duplicate id [%s] on event [%s]",
                             id, event);
                     sagaStorage.save(EventorCollections.toCollection(id), saga);
                     log.info("Saga with id {} registered", id);
-                } else {
-                    Object sagaId = eachMetaHandler.extractId(event);
-                    if (sagaStorage.contains(sagaId)) {
-                        Object saga = sagaStorage.find(eachMetaSaga.origClass, sagaId);
-                        handleMessageBySaga(saga, eachMetaHandler, event);
-                    }
                 }
             }
         }
