@@ -5,6 +5,8 @@ import com.eventor.api.InstanceCreator;
 import com.eventor.impl.InMemoryAggregateRepository;
 import com.eventor.impl.InMemorySagaStorage;
 import com.eventor.impl.SimpleInstanceCreator;
+import com.eventor.internal.ClassProcessor;
+import com.eventor.internal.meta.Info;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -40,6 +42,7 @@ public class EventorBuilder {
     }
 
     public Eventor build() {
-        return new Eventor(classes, instanceCreator, aggregateRepository, sagaStorage);
+        Info info = new ClassProcessor().apply(classes);
+        return new Eventor(info, instanceCreator, aggregateRepository, sagaStorage);
     }
 }

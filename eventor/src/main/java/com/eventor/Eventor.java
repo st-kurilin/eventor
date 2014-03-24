@@ -2,7 +2,6 @@ package com.eventor;
 
 import com.eventor.api.*;
 import com.eventor.internal.Akka;
-import com.eventor.internal.ClassProcessor;
 import com.eventor.internal.EventorCollections;
 import com.eventor.internal.meta.*;
 import org.slf4j.Logger;
@@ -26,11 +25,14 @@ public class Eventor implements CommandBus {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public Eventor(Iterable<Class<?>> aggregates, InstanceCreator instanceCreator, AggregateRepository repository, SagaStorage sagaStorage) {
+    public Eventor(Info info,
+                   InstanceCreator instanceCreator,
+                   AggregateRepository repository,
+                   SagaStorage sagaStorage) {
         this.instanceCreator = instanceCreator;
         this.repository = repository;
         this.sagaStorage = sagaStorage;
-        info = new ClassProcessor().apply(aggregates);
+        this.info = info;
         this.eventBus = createEventBus();
         this.commandBus = createCommandBus();
     }
