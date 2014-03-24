@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.eventor.internal.EventorCollections.newMap;
+import static com.eventor.internal.EventorPreconditions.assume;
 
 public class EventorReflections {
     public static Map<Class<? extends Annotation>, Iterable<Class<?>>> getClassesAnnotated(
@@ -53,18 +54,6 @@ public class EventorReflections {
         return parameterTypes[0];
     }
 
-    private static String stringify(Method method) {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(method.getDeclaringClass().getSimpleName())
-                .append(".")
-                .append(method.getName())
-                .append("(");
-        for (Class<?> each : method.getParameterTypes()) {
-            stringBuilder.append(each.getSimpleName()).append(", ");
-        }
-        return stringBuilder.append(")").toString();
-    }
-
     public static boolean classAnnotated(Class<?> candidate, Class<? extends Annotation> annotation) {
         return candidate.getAnnotation(annotation) != null;
     }
@@ -81,47 +70,33 @@ public class EventorReflections {
     }
 
     public static Object retrieveAnnotatedValue(Object obj, Class<? extends Annotation> mark) {
-        try {
-            for (Field f : obj.getClass().getDeclaredFields()) {
-                if (f.isAnnotationPresent(mark)) {
-                    f.setAccessible(true);
-                    return f.get(obj);
-                }
+        for (Field f : obj.getClass().getDeclaredFields()) {
+            if (f.isAnnotationPresent(mark)) {
+                return getFieldValue(obj, f);
             }
-            throw new RuntimeException(String.format("Fail while getting %s from %s", mark, obj));
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
         }
+        throw new RuntimeException(String.format("Fail while getting %s from %s", mark, obj));
     }
 
     public static Object retrieveNamedValue(Object obj, String mark) {
-        try {
-            String expectedGetterName = "get" + mark.substring(0, 1).toUpperCase() + mark.substring(1);
-            for (Method m : obj.getClass().getDeclaredMethods()) {
-                if (m.getName().equals(expectedGetterName) &&
-                        m.getParameterTypes().length == 0) {
-                    m.setAccessible(true);
-                    return m.invoke(obj);
-                }
+        String expectedGetterName = getterName(mark);
+        for (Method m : obj.getClass().getDeclaredMethods()) {
+            if (m.getName().equals(expectedGetterName)) {
+                return getByGetter(obj, m);
             }
-            for (Field f : obj.getClass().getDeclaredFields()) {
-                if (f.getName().equals(mark)) {
-                    f.setAccessible(true);
-                    return f.get(obj);
-                }
-            }
-            int dotIndex = mark.indexOf('.');
-            if (dotIndex != -1) {
-                String firstPart = mark.substring(0, dotIndex);
-                String secondPart = mark.substring(dotIndex + 1);
-                return retrieveNamedValue(retrieveNamedValue(obj, firstPart), secondPart);
-            }
-            throw new RuntimeException(String.format("Fail while getting %s from %s", mark, obj));
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
         }
+        for (Field f : obj.getClass().getDeclaredFields()) {
+            if (f.getName().equals(mark)) {
+                return getFieldValue(obj, f);
+            }
+        }
+        int dotIndex = mark.indexOf('.');
+        if (dotIndex != -1) {
+            String firstPart = mark.substring(0, dotIndex);
+            String secondPart = mark.substring(dotIndex + 1);
+            return retrieveNamedValue(retrieveNamedValue(obj, firstPart), secondPart);
+        }
+        throw new RuntimeException(String.format("Fail while getting %s from %s", mark, obj));
     }
 
     public static void validateMark(Class<?> classAnnotated, Class<?> classExpected, String mark) {
@@ -142,12 +117,49 @@ public class EventorReflections {
     public static Collection<?> invoke(Object obj, Method m, Object arg) {
         try {
             if (!m.isAccessible()) m.setAccessible(true);
-            Object res = m.invoke(obj, arg);
+            Object res = arg == null ? m.invoke(obj) : m.invoke(obj, arg);
             return EventorCollections.toCollection(res);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Object getByGetter(Object obj, Method m) {
+        try {
+            assume(m.getParameterTypes().length == 0, "expect getter have no params");
+            if (!m.isAccessible()) m.setAccessible(true);
+            return m.invoke(obj);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String getterName(String mark) {
+        return "get" + mark.substring(0, 1).toUpperCase() + mark.substring(1);
+    }
+
+    private static Object getFieldValue(Object obj, Field f) {
+        try {
+            if (!f.isAccessible()) f.setAccessible(true);
+            return f.get(obj);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String stringify(Method method) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(method.getDeclaringClass().getSimpleName())
+                .append(".")
+                .append(method.getName())
+                .append("(");
+        for (Class<?> each : method.getParameterTypes()) {
+            stringBuilder.append(each.getSimpleName()).append(", ");
+        }
+        return stringBuilder.append(")").toString();
     }
 }
