@@ -8,5 +8,6 @@ repositories {
 
 dependencies {
     compile project(':eventor')
-    testCompile group: 'junit', name: 'junit', version: '4.11'
+    testCompile 'junit:junit:4.11'
+    testCompile 'org.mockito:mockito-all:1.8.4'
 }
