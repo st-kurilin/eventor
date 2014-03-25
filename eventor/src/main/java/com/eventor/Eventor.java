@@ -1,18 +1,24 @@
 package com.eventor;
 
 import com.eventor.api.*;
+import com.eventor.api.annotations.OnTimeout;
+import com.eventor.impl.Scheduler;
 import com.eventor.internal.Akka;
 import com.eventor.internal.EventorCollections;
 import com.eventor.internal.meta.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 
 import static com.eventor.internal.EventorCollections.newList;
 import static com.eventor.internal.EventorPreconditions.assume;
 import static com.eventor.internal.EventorPreconditions.assumeNotNull;
+import static com.eventor.internal.EventorReflections.getMethodsAnnotated;
+import static com.eventor.internal.EventorReflections.invoke;
 
 public class Eventor implements CommandBus {
     private final Info info;
@@ -22,19 +28,49 @@ public class Eventor implements CommandBus {
     private final EventBus eventBus;
     private final AggregateRepository repository;
     private final SagaStorage sagaStorage;
+    private final Scheduler<SagaTimeoutData> scheduler;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     public Eventor(Info info,
                    InstanceCreator instanceCreator,
                    AggregateRepository repository,
-                   SagaStorage sagaStorage) {
+                   SagaStorage sagaStorage,
+                   Scheduler<?> scheduler) {
         this.instanceCreator = instanceCreator;
         this.repository = repository;
         this.sagaStorage = sagaStorage;
         this.info = info;
+        this.scheduler = configScheduler(scheduler);
         this.eventBus = createEventBus();
         this.commandBus = createCommandBus();
+    }
+
+    private Scheduler<SagaTimeoutData> configScheduler(Scheduler<?> orig) {
+        //TODO: should scheduler factory be introduced?
+        Scheduler<SagaTimeoutData> res = (Scheduler<SagaTimeoutData>) orig;
+        res.addListener(new Listener() {
+            @Override
+            public void apply(Object obj) {
+                SagaTimeoutData timeoutData = (SagaTimeoutData) obj;
+                log.info("Handle delayed execution {} for saga {}", timeoutData.timeoutEvent, timeoutData.sagaId);
+                if (sagaStorage.contains(timeoutData.sagaId)) {
+                    Object saga = sagaStorage.find(timeoutData.getSagaClass(), timeoutData.sagaId);
+                    for (Method each : getMethodsAnnotated(saga.getClass(), OnTimeout.class).get(OnTimeout.class)) {
+                        if (each.getParameterTypes().length == 1) {
+                            sagaResultsPostprocess(saga,
+                                    invoke(saga, each, timeoutData.timeoutEvent),
+                                    timeoutData.sagaId);
+                        } else {
+                            assume(each.getParameterTypes().length == 0,
+                                    "On timeout methods could take 0 or 1 argument");
+                            sagaResultsPostprocess(saga, invoke(saga, each), timeoutData.sagaId);
+                        }
+                    }
+                }
+            }
+        });
+        return res;
     }
 
     private EventBus createEventBus() {
@@ -121,7 +157,7 @@ public class Eventor implements CommandBus {
 
                 if (sagaStorage.contains(sagaId)) {
                     Object saga = sagaStorage.find(eachMetaSaga.origClass, sagaId);
-                    handleMessageBySaga(saga, eachMetaHandler, cmd);
+                    handleMessageBySaga(saga, eachMetaSaga, eachMetaHandler, cmd);
                 }
             }
         }
@@ -192,10 +228,10 @@ public class Eventor implements CommandBus {
             if (eachMetaHandler.expected.equals(event.getClass())) {
                 Object sagaId = eachMetaHandler.extractId(event);
                 if (sagaStorage.contains(sagaId)) {
-                    handleMessageBySaga(sagaStorage.find(eachMetaSaga.origClass, sagaId), eachMetaHandler, event);
+                    handleMessageBySaga(sagaStorage.find(eachMetaSaga.origClass, sagaId), eachMetaSaga, eachMetaHandler, event);
                 } else if (eachMetaHandler.alwaysStart) {
                     Object saga = instanceCreator.findOrCreateInstanceOf(eachMetaSaga.origClass, false);
-                    handleMessageBySaga(saga, eachMetaHandler, event);
+                    handleMessageBySaga(saga, eachMetaSaga, eachMetaHandler, event);
                     Object id = sagaId == null ? eachMetaSaga.retrieveId(saga) : sagaId;
                     assume(!sagaStorage.contains(id),
                             "Could not create saga with duplicate id [%s] on event [%s]",
@@ -217,10 +253,40 @@ public class Eventor implements CommandBus {
         };
     }
 
-    private void handleMessageBySaga(Object saga, MetaHandler eachMetaHandler, Object msg) {
-        Collection<?> commands = eachMetaHandler.execute(saga, msg);
-        for (Object message : commands) {
-            commandBus.submit(message);
+    private void handleMessageBySaga(Object saga, MetaSaga eachMetaSaga, MetaHandler eachMetaHandler, Object msg) {
+        Collection<?> handlingResult = eachMetaHandler.execute(saga, msg);
+        Object sagaId = eachMetaSaga.retrieveId(saga);
+        sagaResultsPostprocess(saga, handlingResult, sagaId);
+    }
+
+    private void sagaResultsPostprocess(Object saga, Collection<?> handlingResult, Object sagaId) {
+        for (Object each : handlingResult) {
+            if (each instanceof Timeout) {
+                Timeout timeout = (Timeout) each;
+                scheduler.doLater(new SagaTimeoutData(sagaId, timeout.timeoutEvent, saga.getClass()), timeout.duration, timeout.unit);
+            } else {
+                commandBus.submit(each);
+            }
+        }
+    }
+
+    private static class SagaTimeoutData implements Serializable {
+        Object sagaId;
+        String sagaClassName;
+        Object timeoutEvent;
+
+        private SagaTimeoutData(Object sagaId, Object timeoutEvent, Class<?> sagaClass) {
+            this.sagaId = sagaId;
+            this.timeoutEvent = timeoutEvent;
+            this.sagaClassName = sagaClass.getName();
+        }
+
+        Class<?> getSagaClass() {
+            try {
+                return Class.forName(sagaClassName);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

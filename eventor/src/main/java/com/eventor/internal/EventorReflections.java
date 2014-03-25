@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.eventor.internal.EventorCollections.newMap;
+import static com.eventor.internal.EventorCollections.newSet;
 import static com.eventor.internal.EventorPreconditions.assume;
 
 public class EventorReflections {
@@ -114,7 +115,7 @@ public class EventorReflections {
         }
     }
 
-    public static Collection<?> invoke(Object obj, Method m, Object arg) {
+    public static Collection<?> invoke(Object obj, Method m, Object... arg) {
         try {
             if (!m.isAccessible()) m.setAccessible(true);
             Object res = arg == null ? m.invoke(obj) : m.invoke(obj, arg);
@@ -161,5 +162,15 @@ public class EventorReflections {
             stringBuilder.append(each.getSimpleName()).append(", ");
         }
         return stringBuilder.append(")").toString();
+    }
+
+    public static Iterable<Method> handlerMethods(Class<?> origClass, Class<?> paramClass) {
+        Set<Method> res = newSet();
+        for (Method each : origClass.getDeclaredMethods()) {
+            if (each.getParameterTypes().length == 1 && each.getParameterTypes()[0].equals(paramClass)) {
+                res.add(each);
+            }
+        }
+        return res;
     }
 }

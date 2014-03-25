@@ -1,12 +1,15 @@
 package com.eventor.impl;
 
 import com.eventor.api.InstanceCreator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class SimpleInstanceCreator implements InstanceCreator {
     public Map<Class<?>, Object> instancies = new HashMap<Class<?>, Object>();
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public synchronized <T> T findInstanceOf(Class<T> clazz) {
@@ -41,6 +44,7 @@ public class SimpleInstanceCreator implements InstanceCreator {
 
     private <T> T createInstance(Class<T> clazz) {
         try {
+            log.info("Creating instance for class {} ({})", clazz.getSimpleName(), clazz.getName());
             return clazz.newInstance();
         } catch (InstantiationException e) {
             throw new RuntimeException(e);

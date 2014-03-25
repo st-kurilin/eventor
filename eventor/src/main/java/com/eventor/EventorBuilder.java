@@ -2,12 +2,11 @@ package com.eventor;
 
 import com.eventor.api.AggregateRepository;
 import com.eventor.api.InstanceCreator;
-import com.eventor.impl.InMemoryAggregateRepository;
-import com.eventor.impl.InMemorySagaStorage;
-import com.eventor.impl.SimpleInstanceCreator;
+import com.eventor.impl.*;
 import com.eventor.internal.ClassProcessor;
 import com.eventor.internal.meta.Info;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -18,6 +17,7 @@ public class EventorBuilder {
     private AggregateRepository aggregateRepository = new InMemoryAggregateRepository();
     private SagaStorage sagaStorage = new InMemorySagaStorage();
     private Set<Class<?>> classes = newSet();
+    private Scheduler<? extends Serializable> scheduler = new InMemoryScheduler<Serializable>();
 
     public EventorBuilder addClasses(Class<?>... classes) {
         this.classes.addAll(Arrays.asList(classes));
@@ -41,8 +41,13 @@ public class EventorBuilder {
         return this;
     }
 
+    public EventorBuilder scheduler(Scheduler<? extends Serializable> scheduler) {
+        this.scheduler = scheduler;
+        return this;
+    }
+
     public Eventor build() {
         Info info = new ClassProcessor().apply(classes);
-        return new Eventor(info, instanceCreator, aggregateRepository, sagaStorage);
+        return new Eventor(info, instanceCreator, aggregateRepository, sagaStorage, scheduler);
     }
 }
