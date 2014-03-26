@@ -1,9 +1,7 @@
 package com.eventor.internal;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -79,6 +77,16 @@ public class EventorReflections {
         throw new RuntimeException(String.format("Fail while getting %s from %s", mark, obj));
     }
 
+    public static Class<?> retrieveTypeOfAnnotatedValue(Class<?> clazz, Class<? extends Annotation> annotation) {
+        for (Field f : clazz.getDeclaredFields()) {
+            if (f.isAnnotationPresent(annotation)) {
+                if (!f.isAccessible()) f.setAccessible(true);
+                return boxPrimitiveType(f.getType());
+            }
+        }
+        throw new RuntimeException(String.format("Fail while getting %s type from %s", annotation, clazz));
+    }
+
     public static Object retrieveNamedValue(Object obj, String mark) {
         String expectedGetterName = getterName(mark);
         for (Method m : obj.getClass().getDeclaredMethods()) {
@@ -127,6 +135,19 @@ public class EventorReflections {
         }
     }
 
+    private static Object newInstance(Constructor c, Object... arg) {
+        try {
+            if (!c.isAccessible()) c.setAccessible(true);
+            return c.newInstance(arg);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static Object getByGetter(Object obj, Method m) {
         try {
             assume(m.getParameterTypes().length == 0, "expect getter have no params");
@@ -167,10 +188,59 @@ public class EventorReflections {
     public static Iterable<Method> handlerMethods(Class<?> origClass, Class<?> paramClass) {
         Set<Method> res = newSet();
         for (Method each : origClass.getDeclaredMethods()) {
-            if (each.getParameterTypes().length == 1 && each.getParameterTypes()[0].equals(paramClass)) {
+            if (checkMethodParam(each, paramClass)) {
                 res.add(each);
             }
         }
         return res;
+    }
+
+    public static Object wrap(Object obj, Class<?> wrapper) {
+        if (obj == null) return null;
+        if (obj.getClass().isAssignableFrom(wrapper)) {
+            return obj;
+        } else {
+            for (Method m : handlerMethods(wrapper, obj.getClass())) {
+                if (m.getReturnType().isAssignableFrom(wrapper) && Modifier.isStatic(m.getModifiers())) {
+                    String name = m.getName();
+                    if (name.equals("valueOf") || name.equals("fromString")) {
+                        Object[] res = invoke(null, m, obj).toArray();
+                        if (res.length != 1) {
+                            throw new RuntimeException(String.format(
+                                    "Fail while wrapping '%s' to '%s' via static '%s' method", obj, wrapper, name));
+                        }
+                        return res[0];
+                    }
+                }
+            }
+            for (Constructor c : wrapper.getDeclaredConstructors()) {
+                if (checkConstructorParam(c, obj.getClass())) {
+                    return newInstance(c, obj);
+                }
+            }
+            throw new RuntimeException(String.format("Fail while wrapping '%s' to '%s'", obj, wrapper));
+        }
+    }
+
+    private static boolean checkMethodParam(Method m, Class<?> paramClass) {
+        return m.getParameterTypes().length == 1 && boxPrimitiveType(m.getParameterTypes()[0]).equals(paramClass);
+    }
+
+    private static boolean checkConstructorParam(Constructor c, Class<?> paramClass) {
+        return c.getParameterTypes().length == 1 &&
+                boxPrimitiveType(c.getParameterTypes()[0]).isAssignableFrom(paramClass);
+    }
+
+    private static Class<?> boxPrimitiveType(Class<?> clazz) {
+        return primitiveTypes.containsKey(clazz) ? primitiveTypes.get(clazz) : clazz;
+    }
+
+    private static Map<Class<?>, Class<?>> primitiveTypes = newMap();
+
+    static {
+        primitiveTypes.put(byte.class, Byte.class);
+        primitiveTypes.put(short.class, Short.class);
+        primitiveTypes.put(int.class, Integer.class);
+        primitiveTypes.put(long.class, Long.class);
     }
 }

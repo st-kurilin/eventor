@@ -19,6 +19,7 @@ import static com.eventor.internal.EventorPreconditions.assume;
 import static com.eventor.internal.EventorPreconditions.assumeNotNull;
 import static com.eventor.internal.EventorReflections.getMethodsAnnotated;
 import static com.eventor.internal.EventorReflections.invoke;
+import static com.eventor.internal.EventorReflections.wrap;
 
 public class Eventor implements CommandBus {
     private final Info info;
@@ -124,7 +125,7 @@ public class Eventor implements CommandBus {
     private void handleCmdByAggregate(MetaAggregate eachMetaAggregate, Object cmd) {
         for (MetaHandler eachMetaHandler : eachMetaAggregate.commandHandlers) {
             if (eachMetaHandler.expected.equals(cmd.getClass())) {
-                Object aggregateId = eachMetaHandler.extractId(cmd);
+                Object aggregateId = wrap(eachMetaHandler.extractId(cmd), eachMetaAggregate.idClass);
                 if (aggregateId == null && eachMetaHandler.alwaysStart) {
                     Object aggregate = instanceCreator.findOrCreateInstanceOf(eachMetaAggregate.origClass, false);
                     handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
@@ -153,8 +154,7 @@ public class Eventor implements CommandBus {
     private void handleCmdBySaga(MetaSaga eachMetaSaga, Object cmd) {
         for (MetaHandler eachMetaHandler : eachMetaSaga.commandHandlers) {
             if (eachMetaHandler.expected.equals(cmd.getClass())) {
-                Object sagaId = eachMetaHandler.extractId(cmd);
-
+                Object sagaId = wrap(eachMetaHandler.extractId(cmd), eachMetaSaga.idClass);
                 if (sagaStorage.contains(sagaId)) {
                     Object saga = sagaStorage.find(eachMetaSaga.origClass, sagaId);
                     handleMessageBySaga(saga, eachMetaSaga, eachMetaHandler, cmd);
