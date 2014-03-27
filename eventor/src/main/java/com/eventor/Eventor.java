@@ -5,6 +5,7 @@ import com.eventor.api.annotations.OnTimeout;
 import com.eventor.impl.Scheduler;
 import com.eventor.internal.Akka;
 import com.eventor.internal.EventorCollections;
+import com.eventor.internal.EventorReflections;
 import com.eventor.internal.meta.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +125,7 @@ public class Eventor implements CommandBus {
     private void handleCmdByAggregate(MetaAggregate eachMetaAggregate, Object cmd) {
         for (MetaHandler eachMetaHandler : eachMetaAggregate.commandHandlers) {
             if (eachMetaHandler.expected.equals(cmd.getClass())) {
-                Object aggregateId = eachMetaHandler.extractId(cmd);
+                Object aggregateId = wrapId(eachMetaHandler.extractId(cmd), eachMetaAggregate.idClass);
                 if (aggregateId == null && eachMetaHandler.alwaysStart) {
                     Object aggregate = instanceCreator.findOrCreateInstanceOf(eachMetaAggregate.origClass, false);
                     handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
@@ -136,6 +137,15 @@ public class Eventor implements CommandBus {
                     }
                 }
             }
+        }
+    }
+
+    private Object wrapId(Object id, Class<?> idClass) {
+        if (id == null) return null;
+        if (id.getClass().isAssignableFrom(idClass)) {
+            return id;
+        } else {
+            return EventorReflections.wrapId(id, idClass);
         }
     }
 
@@ -153,8 +163,7 @@ public class Eventor implements CommandBus {
     private void handleCmdBySaga(MetaSaga eachMetaSaga, Object cmd) {
         for (MetaHandler eachMetaHandler : eachMetaSaga.commandHandlers) {
             if (eachMetaHandler.expected.equals(cmd.getClass())) {
-                Object sagaId = eachMetaHandler.extractId(cmd);
-
+                Object sagaId = wrapId(eachMetaHandler.extractId(cmd), eachMetaSaga.idClass);
                 if (sagaStorage.contains(sagaId)) {
                     Object saga = sagaStorage.find(eachMetaSaga.origClass, sagaId);
                     handleMessageBySaga(saga, eachMetaSaga, eachMetaHandler, cmd);

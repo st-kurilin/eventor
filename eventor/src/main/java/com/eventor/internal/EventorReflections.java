@@ -1,12 +1,8 @@
 package com.eventor.internal;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.*;
+import java.util.*;
 
 import static com.eventor.internal.EventorCollections.newMap;
 import static com.eventor.internal.EventorCollections.newSet;
@@ -79,6 +75,16 @@ public class EventorReflections {
         throw new RuntimeException(String.format("Fail while getting %s from %s", mark, obj));
     }
 
+    public static Class<?> retrieveTypeOfAnnotatedValue(Class<?> clazz, Class<? extends Annotation> mark) {
+        for (Field f : clazz.getDeclaredFields()) {
+            if (f.isAnnotationPresent(mark)) {
+                if (!f.isAccessible()) f.setAccessible(true);
+                return wrapPrimitive(f.getType());
+            }
+        }
+        throw new RuntimeException(String.format("Fail while getting %s type from %s", mark, clazz));
+    }
+
     public static Object retrieveNamedValue(Object obj, String mark) {
         String expectedGetterName = getterName(mark);
         for (Method m : obj.getClass().getDeclaredMethods()) {
@@ -120,6 +126,19 @@ public class EventorReflections {
             if (!m.isAccessible()) m.setAccessible(true);
             Object res = arg == null ? m.invoke(obj) : m.invoke(obj, arg);
             return EventorCollections.toCollection(res);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Object newInstance(Object obj, Constructor c) {
+        try {
+            if (!c.isAccessible()) c.setAccessible(true);
+            return c.newInstance(obj);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
@@ -172,5 +191,39 @@ public class EventorReflections {
             }
         }
         return res;
+    }
+
+    public static Object wrapId(Object id, Class<?> idClass) {
+        for (Constructor c : idClass.getDeclaredConstructors()) {
+            if (c.getGenericParameterTypes().length == 1 && wrapPrimitive(c.getParameterTypes()[0]).isAssignableFrom(id.getClass())) {
+                return EventorReflections.newInstance(id, c);
+            }
+        }
+        for (Method m : EventorReflections.handlerMethods(idClass, id.getClass())) {
+            if (Modifier.isStatic(m.getModifiers())) {
+                String name = m.getName();
+                if (name.equals("valueOf") ||
+                    name.equals("fromString") && m.getReturnType().equals(UUID.class)) {
+                    return EventorReflections.invoke(null, m, id).toArray()[0];
+                }
+            }
+        }
+        throw new RuntimeException(String.format("Fail while converting '%s' id to '%s'", id, idClass));
+    }
+
+    private static Class<?> wrapPrimitive(Class<?> clazz) {
+        return clazz.isPrimitive() ? wrappers.get(clazz) : clazz;
+    }
+
+    public final static Map<Class<?>, Class<?>> wrappers = new HashMap<Class<?>, Class<?>>();
+    static {
+        wrappers.put(boolean.class, Boolean.class);
+        wrappers.put(byte.class, Byte.class);
+        wrappers.put(short.class, Short.class);
+        wrappers.put(char.class, Character.class);
+        wrappers.put(int.class, Integer.class);
+        wrappers.put(long.class, Long.class);
+        wrappers.put(float.class, Float.class);
+        wrappers.put(double.class, Double.class);
     }
 }
