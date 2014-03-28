@@ -11,6 +11,6 @@ public class CourseRegistrator {
     }
 
     public void registerCourse(String courseId) {
-        eventBus.publish(new CourseRegistered(courseId));
+        eventBus.publish(new CourseRegistered(courseId), null);
     }
 }

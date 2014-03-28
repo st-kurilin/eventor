@@ -19,7 +19,7 @@ class EventorTest extends Specification {
 
     def "Event listeners should receive messages from aggregates"() {
         when:
-        eb.publish(new CourseRegistered("Math-01"))
+        eb.publish(new CourseRegistered("Math-01"), null)
         cb.submit(new SubmitAnswer("Math-01", "Bob", [1, 2, 42, 1, 3] as int[]))
         cb.submit(new SubmitAnswer("Math-01", "Poll", [42, 2, 42, 1, 3] as int[]))
         Thread.sleep(500)

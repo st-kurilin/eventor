@@ -41,16 +41,17 @@ public class ClassProcessor {
         for (Method each : clazz.getMethods()) {
             EventListener el = each.getAnnotation(EventListener.class);
             CommandHandler ch = each.getAnnotation(CommandHandler.class);
+            SideEffect se = each.getAnnotation(SideEffect.class);
             EventorPreconditions.assume(ch == null || el == null,
                     "Same method could not handle commands and events [%s.%s]", clazz, each);
 
             if (el != null) {
                 listener.add(new MetaHandler(each, EventorReflections.getSingleParamType(each),
-                        null, false, false, null));
+                        null, false, false, null, se == null));
             }
             if (ch != null) {
                 handlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each),
-                        null, false, false, null));
+                        null, false, false, null, false));
             }
         }
         return new MetaSubscriber(clazz, handlers, listener);
@@ -80,7 +81,7 @@ public class ClassProcessor {
         Set<MetaHandler> eventHandlers = newSet();
         for (Method each : methods) {
             eventHandlers.add(new MetaHandler(each, EventorReflections.getSingleParamType(each), null, false,
-                    each.getAnnotation(Start.class) != null, null));
+                    each.getAnnotation(Start.class) != null, null, false));
         }
         return eventHandlers;
     }
@@ -96,7 +97,7 @@ public class ClassProcessor {
                 EventorReflections.validateMark(clazz, expected, idField);
             }
             commandHandlers.add(new MetaHandler(each, expected, null, false,
-                    each.getAnnotation(Start.class) != null, idField));
+                    each.getAnnotation(Start.class) != null, idField, false));
         }
         return commandHandlers;
     }

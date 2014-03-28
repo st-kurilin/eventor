@@ -16,9 +16,9 @@ public class Fixture {
     private Iterable<Object> notExpectedEvents;
     private boolean andNoMoreFlag;
     private static Object NO_MORE = new Object();
+    private Eventor eventor;
 
     public Fixture(Class<?>... classes) {
-
     }
 
     public When givenEvents(Object... events) {

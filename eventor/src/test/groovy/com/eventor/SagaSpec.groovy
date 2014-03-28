@@ -14,7 +14,7 @@ class SagaSpec extends Specification {
 
     def "Saga doesnt produce cmd without delay"() {
         when:
-        eb.publish(new Init())
+        eb.publish(new Init(), null)
         Thread.sleep(500)
         then:
         instanceCreator.findOrCreateInstanceOf(El, true).aCreated == 0
@@ -22,7 +22,7 @@ class SagaSpec extends Specification {
 
     def "Saga produce cmd on delay"() {
         when:
-        eb.publish(new Init())
+        eb.publish(new Init(), null)
         Thread.sleep(1500)
         then:
         instanceCreator.findOrCreateInstanceOf(El, true).aCreated == 1
@@ -30,7 +30,7 @@ class SagaSpec extends Specification {
 
     def instanceCreator = new SimpleInstanceCreator()
     def eventor = new EventorBuilder()
-            .addClasses(A, SagaWithTimeout, El)
+            .addClasses(AppleAggregate, SagaWithTimeout, El)
             .withInstanceCreator(instanceCreator)
             .build()
     def eb = eventor.getEventBus()
@@ -50,7 +50,7 @@ class A {
 
     @Start
     @CommandHandler
-    def on(CreateA cmd) { return new ACreated() }
+    def on(CreateApple cmd) { return new AppleCreated() }
 }
 
 class TimeoutEvent implements Serializable {}
@@ -68,7 +68,7 @@ class SagaWithTimeout {
 
     @OnTimeout(TimeoutEvent)
     public Object timeout() {
-        return new CreateA()
+        return new CreateApple()
     }
 }
 
@@ -77,7 +77,7 @@ class El {
     def aCreated = 0;
 
     @EventListener
-    public void on(ACreated e) {
+    public void on(AppleCreated e) {
         aCreated++
     }
 }

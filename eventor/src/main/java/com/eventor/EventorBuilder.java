@@ -1,6 +1,8 @@
 package com.eventor;
 
 import com.eventor.api.AggregateRepository;
+import com.eventor.api.EventSourcedAggregateRepository;
+import com.eventor.api.EventStorage;
 import com.eventor.api.InstanceCreator;
 import com.eventor.impl.*;
 import com.eventor.internal.ClassProcessor;
@@ -18,6 +20,8 @@ public class EventorBuilder {
     private SagaStorage sagaStorage = new InMemorySagaStorage();
     private Set<Class<?>> classes = newSet();
     private Scheduler<? extends Serializable> scheduler = new InMemoryScheduler<Serializable>();
+    private EventStorage eventStore = new InMemEventStorage();
+    private boolean useEventSourcedAggregateRepository;
 
     public EventorBuilder addClasses(Class<?>... classes) {
         this.classes.addAll(Arrays.asList(classes));
@@ -46,8 +50,26 @@ public class EventorBuilder {
         return this;
     }
 
+    public EventorBuilder eventStorage(EventStorage eventStore) {
+        this.eventStore = eventStore;
+        return this;
+    }
+
+    public EventorBuilder eventSourcedAggregateRepository() {
+        this.useEventSourcedAggregateRepository = true;
+        return this;
+    }
+
     public Eventor build() {
         Info info = new ClassProcessor().apply(classes);
-        return new Eventor(info, instanceCreator, aggregateRepository, sagaStorage, scheduler);
+        if (useEventSourcedAggregateRepository) {
+            aggregateRepository = new EventSourcedAggregateRepository(eventStore, instanceCreator);
+        }
+        return new Eventor(info,
+                instanceCreator,
+                aggregateRepository,
+                sagaStorage,
+                scheduler,
+                eventStore);
     }
 }

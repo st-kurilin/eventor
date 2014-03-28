@@ -36,8 +36,8 @@ public class EventorModuleTest {
         Injector injector = createInjector();
         EventBus eb = injector.getInstance(EventBus.class);
         CommandBus cb = injector.getInstance(CommandBus.class);
-        eb.publish(new Event(1));
-        eb.publish(new Event(2));
+        eb.publish(new Event(1), null);
+        eb.publish(new Event(2), null);
         Thread.sleep(500);
         cb.submit(new Cmd2(1));
         cb.submit(new Cmd2(1));
@@ -82,7 +82,7 @@ public class EventorModuleTest {
 
         @CommandHandler
         public void handle(Cmd c) {
-            eventBus.publish(new Event(count++));
+            eventBus.publish(new Event(count++), null);
         }
     }
 

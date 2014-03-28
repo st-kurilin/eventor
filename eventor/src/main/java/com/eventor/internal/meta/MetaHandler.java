@@ -14,15 +14,17 @@ public class MetaHandler {
     public final boolean alwaysFinish;
     public final boolean alwaysStart;
     public final String idField;
+    public final boolean replyable;
 
 
-    public MetaHandler(Method target, Class<?> expected, String dispatchField, boolean alwaysFinish, boolean alwaysStart, String idField) {
+    public MetaHandler(Method target, Class<?> expected, String dispatchField, boolean alwaysFinish, boolean alwaysStart, String idField, boolean replyable) {
         this.target = target;
         this.expected = expected;
         this.dispatchField = dispatchField;
         this.alwaysFinish = alwaysFinish;
         this.alwaysStart = alwaysStart;
         this.idField = idField;
+        this.replyable = replyable;
     }
 
     public Collection<?> execute(Object obj, Object arg) {

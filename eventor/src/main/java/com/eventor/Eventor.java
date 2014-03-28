@@ -30,6 +30,7 @@ public class Eventor implements CommandBus {
     private final AggregateRepository repository;
     private final SagaStorage sagaStorage;
     private final Scheduler<SagaTimeoutData> scheduler;
+    private final EventStorage eventStorage;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -37,14 +38,24 @@ public class Eventor implements CommandBus {
                    InstanceCreator instanceCreator,
                    AggregateRepository repository,
                    SagaStorage sagaStorage,
-                   Scheduler<?> scheduler) {
+                   Scheduler<?> scheduler,
+                   EventStorage eventStorage) {
         this.instanceCreator = instanceCreator;
         this.repository = repository;
         this.sagaStorage = sagaStorage;
         this.info = info;
+        this.eventStorage = eventStorage;
         this.scheduler = configScheduler(scheduler);
         this.eventBus = createEventBus();
         this.commandBus = createCommandBus();
+    }
+
+    public void replyEventsForAllViews() {
+        for (Object eachEvent : eventStorage.getAll()) {
+            for (MetaSubscriber eachEl : info.subscribers) {
+                handleEventByEvenListener(eachEl, eachEvent, true);
+            }
+        }
     }
 
     private Scheduler<SagaTimeoutData> configScheduler(Scheduler<?> orig) {
@@ -91,8 +102,9 @@ public class Eventor implements CommandBus {
         final Invokable router = akka.createBroadcaster(eventListeners);
         return new EventBus() {
             @Override
-            public void publish(Object event) {
+            public void publish(Object event, Object source) {
                 log.info("Published to bus {}", event);
+                eventStorage.fired(event, source);
                 router.invoke(event, null);
             }
         };
@@ -128,27 +140,25 @@ public class Eventor implements CommandBus {
                 Object aggregateId = wrap(eachMetaHandler.extractId(cmd), eachMetaAggregate.idClass);
                 if (aggregateId == null && eachMetaHandler.alwaysStart) {
                     Object aggregate = instanceCreator.findOrCreateInstanceOf(eachMetaAggregate.origClass, false);
-                    handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
+                    handleCmdByAggregate(cmd, eachMetaHandler, aggregate, eachMetaAggregate);
                     saveAggregate(eachMetaAggregate, aggregate, cmd);
                 } else {
                     Object aggregate = repository.getById(eachMetaAggregate.origClass, aggregateId);
                     if (aggregate != null) {
-                        handleCmdByAggregate(cmd, eachMetaHandler, aggregate);
+                        handleCmdByAggregate(cmd, eachMetaHandler, aggregate, eachMetaAggregate);
                     }
                 }
             }
         }
     }
 
-    private void handleCmdByAggregate(Object cmd, MetaHandler eachMetaHandler, Object aggregate) {
+    private void handleCmdByAggregate(Object cmd,
+                                      MetaHandler eachMetaHandler, Object aggregate, MetaAggregate metaAggregate) {
         Collection<?> events = EventorCollections.toCollection(eachMetaHandler.execute(aggregate, cmd));
         log.debug("Aggregate {} produced {} while handling cmd {}", aggregate, events, cmd);
-        for (Object eachEvent : events) {
-            handleEventByAggregate(aggregate, eachEvent);
-        }
-        for (Object eachEvent : events) {
-            eventBus.publish(eachEvent);
-        }
+        for (Object eachEvent : events) handleEventByAggregate(aggregate, eachEvent);
+        Object aggregateId = metaAggregate.retrieveId(aggregate);
+        for (Object eachEvent : events) eventBus.publish(eachEvent, aggregateId);
     }
 
     private void handleCmdBySaga(MetaSaga eachMetaSaga, Object cmd) {
@@ -163,9 +173,9 @@ public class Eventor implements CommandBus {
         }
     }
 
-    private void handleEventByEvenListener(MetaSubscriber eventListener, Object event) {
+    private void handleEventByEvenListener(MetaSubscriber eventListener, Object event, boolean replyMode) {
         for (MetaHandler eachMetaHandler : eventListener.eventHandlers) {
-            if (eachMetaHandler.expected.equals(event.getClass())) {
+            if ((!replyMode || eachMetaHandler.replyable) && eachMetaHandler.expected.equals(event.getClass())) {
                 Object l = instanceCreator.findOrCreateInstanceOf(eventListener.origClass, true);
                 eachMetaHandler.execute(l, event);
             }
@@ -178,7 +188,7 @@ public class Eventor implements CommandBus {
                 Object ch = instanceCreator.findOrCreateInstanceOf(eachCommandHandler.origClass, true);
                 Collection<?> result = eachMetaHandler.execute(ch, cmd);
                 for (Object event : result) {
-                    eventBus.publish(event);
+                    eventBus.publish(event, null);
                 }
             }
         }
@@ -220,7 +230,10 @@ public class Eventor implements CommandBus {
     private void handleEventByAggregate(Object aggregate, MetaHandler eachMetaHandler, Object event) {
         log.debug("Handle event {} by aggregate {}", event, aggregate);
         Collection<?> res = eachMetaHandler.execute(aggregate, event);
-        if (!res.isEmpty()) throw new RuntimeException("Void expected");
+        if (!res.isEmpty()) {
+            throw new RuntimeException(
+                    String.format("Void expected, but [%s] instead of empty collection presented", res));
+        }
     }
 
     private void handleEventBySaga(final MetaSaga eachMetaSaga, final Object event) {
@@ -315,7 +328,7 @@ public class Eventor implements CommandBus {
             @Override
             public void apply(Object event) {
                 log.info("Event {} will be handled by event listener {}", event, each.origClass.getSimpleName());
-                handleEventByEvenListener(each, event);
+                handleEventByEvenListener(each, event, false);
             }
         };
     }
