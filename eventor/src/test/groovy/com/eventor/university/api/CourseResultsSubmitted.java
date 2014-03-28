@@ -1,6 +1,6 @@
 package com.eventor.university.api;
 
-public class CourseResultsSubmitted extends Object {
+public class CourseResultsSubmitted {
     public final String courseId;
     public final String studentId;
     public final int result;

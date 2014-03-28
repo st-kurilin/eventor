@@ -1,5 +1,6 @@
 package com.eventor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +66,7 @@ public class Fixture {
 
     private Iterable<Object> convert(Object[] inp) {
         List<Object> res = newList();
-        for (Object each : inp) res.add(each);
+        Collections.addAll(res, inp);
         return res;
     }
 

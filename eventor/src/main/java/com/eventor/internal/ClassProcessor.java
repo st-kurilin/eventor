@@ -59,13 +59,11 @@ public class ClassProcessor {
 
     private MetaAggregate handleAggregate(Class<?> aggregateClass) {
         Map<Class<? extends Annotation>, Iterable<Method>> annotated =
-                EventorReflections.getMethodsAnnotated(aggregateClass, EventHandler.class,
-                        CommandHandler.class, EventListener.class);
+                EventorReflections.getMethodsAnnotated(aggregateClass, CommandHandler.class, EventListener.class);
         return new MetaAggregate(aggregateClass,
                 extractIdType(aggregateClass),
                 extractCommandHandlers(aggregateClass, annotated.get(CommandHandler.class)),
-                extractEventHandlers(
-                        concat(annotated.get(EventHandler.class), annotated.get(EventListener.class))));
+                extractEventHandlers(annotated.get(EventListener.class)));
     }
 
     private MetaSaga handleSaga(Class<?> sagaClass) {

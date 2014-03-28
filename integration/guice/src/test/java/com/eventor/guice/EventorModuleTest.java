@@ -5,7 +5,6 @@ import com.eventor.api.EventBus;
 import com.eventor.api.annotations.*;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.*;
-import com.google.inject.Key;
 import com.google.inject.name.Names;
 import org.junit.Test;
 
@@ -53,7 +52,7 @@ public class EventorModuleTest {
             protected void configure() {
                 bind(Map.class).annotatedWith(Names.named("counter")).toInstance(new HashMap());
             }
-        }, new EventorModule(Arrays.<Class<?>>asList(new Class<?>[]{MyAggregate.class, El.class})));
+        }, new EventorModule(Arrays.<Class<?>>asList(MyAggregate.class, El.class)));
     }
 
     public static class Cmd {
