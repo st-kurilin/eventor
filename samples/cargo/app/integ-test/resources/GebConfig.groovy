@@ -5,8 +5,7 @@ driver = {
     def driver = new HtmlUnitDriver(BrowserVersion.FIREFOX_17)
     driver
 }
-reportOnTestFailureOnly = true
-reportsDir = 'target/geb-reports'
+reportsDir = 'samples/cargo/app/build/reports/integ-test'
 waiting {
     timeout = 5
 }

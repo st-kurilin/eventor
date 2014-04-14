@@ -1,155 +1,110 @@
 package com.eventor.cargo
 
-import com.eventor.cargo.pages.*
+import geb.Page
 import geb.spock.GebReportingSpec
+import spock.lang.Shared
 
 class DDDSampleSpec extends GebReportingSpec {
 
-    def "Should open welcome DDDSample page"() {
-        when:
-        to WelcomePage
-        then:
-        at WelcomePage
+    def "Cargo info will appear on Tracking cargo page"() {
+        setup: to TrackingCargo
+        when: trackCargo(trackingId)
+        then: assertCargo(trackingId, currentStatus, misdirected)
+        where: trackingId << trackingIds
+        currentStatus          | misdirected
+        'In port New York'     | false
+        'Onboard voyage 0100S' | true
+
     }
 
-    def "Should open Tracing cargo page"() {
-        setup:
-        to WelcomePage
-        when:
-        cargoTracking.click()
-        then:
-        at TrackingCargoPage
+    def "Cargos will be on Cargo Administration page"() {
+        when: to CargoAdministration
+        then: cargos
     }
 
-    def "Should open Cargo administration page"() {
-        setup:
-        to WelcomePage
-        when:
-        bookingAndRouting.click()
-        then:
-        at CargoAdministrationPage
+    def "Cargo info will appear on Cargo Administration page"() {
+        setup: to CargoAdministration
+        when: cargoLink(trackingId).click()
+        then: assertCargo(true)
+        where: trackingId << trackingIds
     }
 
-    def "Check tracking cargo info"() {
-        setup:
-        to WelcomePage
-        cargoTracking.click()
-        at TrackingCargoPage
-        when:
-        trackingId << trackingIdVal
+    def "Book and route new cargo on Cargo Administration page"() {
+        setup: to CargoAdministration
+        when: bookNewCargo(origin, destination, arrivalDeadline)
+        then: assertCargo(false)
+        when: routeNewCargo(1)
+        then: assertCargo(true)
+        where: [origin, destination, arrivalDeadline] << [['CNHGH', 'NLRTM', '1/1/2345']]
+    }
+
+    @Shared
+    def trackingIds = ['ABC123', 'JKL567']
+}
+
+class TrackingCargo extends Page {
+    static url = "http://localhost:8080/dddsample/public/track"
+    static at = { title == "Tracking cargo" }
+    static content = {
+        trackingId { $("input", id: "idInput") }
+        track { $("input", type: "submit") }
+        status { $("h2").text() }
+        misdirected { $("p", class: "notify").text() }
+    }
+
+    void trackCargo(String id) {
+        trackingId << id
         track.click()
-        then:
-        [status, additionalInfo] == [statusVal, additionalInfoVal]
-        where:
-        [trackingIdVal, statusVal, additionalInfoVal] << [
-                ['ABC123', 'Cargo ABC123 is now: In port New York',
-                        ['Estimated time of arrival in Helsinki: 2009-03-12 12:00',
-                                'Next expected activity is to load cargo onto voyage 0200T in New York',
-                                'Received in Hongkong, at 3/1/09 12:00 AM.',
-                                'Loaded onto voyage 0100S in Hongkong, at 3/2/09 12:00 AM.',
-                                'Unloaded off voyage 0100S in New York, at 3/5/09 12:00 AM.']],
-                ['JKL567', 'Cargo JKL567 is now: Onboard voyage 0100S',
-                        ['Estimated time of arrival in Stockholm: ?', 'Cargo is misdirected',
-                                'Received in Hangzhou, at 3/1/09 12:00 AM.',
-                                'Loaded onto voyage 0100S in Hangzhou, at 3/3/09 12:00 AM.',
-                                'Unloaded off voyage 0100S in New York, at 3/5/09 12:00 AM.',
-                                'Loaded onto voyage 0100S in New York, at 3/6/09 12:00 AM.']]
-        ]
     }
 
-    def "Check default cargos in All cargos table"() {
-        setup:
-        to WelcomePage
-        when:
-        bookingAndRouting.click()
-        at CargoAdministrationPage
-        then:
-        allCargos[rowIndex] == value
-        where:
-        rowIndex | value
-        0        | 'ABC123 CNHKG FIHEL Yes'
-        1        | 'JKL567 CNHGH SESTO Yes'
+    boolean assertCargo(String trackingId, String currentStatus, boolean misdirected) {
+        assert status.contains(trackingId)
+        assert status.contains(currentStatus)
+        if (misdirected) {
+            assert misdirected
+        }
+        return true;
+    }
+}
+
+class CargoAdministration extends Page {
+    static url = "http://localhost:8080/dddsample/admin/list"
+    static at = { title == "Cargo Administration" }
+    static content = {
+        caption { $("caption")[0].text() }
+        cargos { $("tbody tr")*.text() }
+        cargoLink { name -> $("tbody a").find { item -> item.text() == name } }
+        listAllCargoLink { $("a", text: "List all cargos") }
+        bookNewCargoLink { $("a", text: "Book new cargo") }
+        itinerary { $("tbody")[1].find("tr")*.text() }
+        routeThisCargo { $("a", text: "Route this cargo") }
+        origin { $("select", name: "originUnlocode") }
+        destination { $("select", name: "destinationUnlocode") }
+        arrivalDeadline { $("input", name: "arrivalDeadline") }
+        book { $("input", value: "Book") }
+        assignCargoToRoute { i -> $("input", value: "Assign cargo to this route")[i - 1] }
     }
 
-    def "Check default cargo info"() {
-        setup:
-        to WelcomePage
-        bookingAndRouting.click()
-        at CargoAdministrationPage
-        when:
-        cargoLink(row).click()
-        at CargoInfoPage
-        then:
-        [caption, origin, destination, arrivalDeadline, itineraryInfo] == [captionVal, originVal, destinationVal,
-                arrivalDeadlineVal, itenararyInfoVal]
-        where:
-        [row, captionVal, originVal, destinationVal, arrivalDeadlineVal, itenararyInfoVal] << [
-                ['ABC123', 'Details for cargo ABC123', 'CNHKG', 'FIHEL', '2009-03-15 12:00',
-                        ['0100S CNHKG (2009-03-02 12:00) USNYC (2009-03-05 12:00)',
-                                '0200T USNYC (2009-03-06 12:00) USDAL (2009-03-08 12:00)',
-                                '0300A USDAL (2009-03-09 12:00) FIHEL (2009-03-12 12:00)']],
-                ['JKL567', 'Details for cargo JKL567', 'CNHGH', 'SESTO', '2009-03-18 12:00',
-                        ['0100S CNHGH (2009-03-03 12:00) USNYC (2009-03-05 12:00)',
-                                '0200T USNYC (2009-03-06 12:00) USDAL (2009-03-08 12:00)',
-                                '0300A USDAL (2009-03-09 12:00) SESTO (2009-03-11 12:00)']]
-        ]
-    }
-
-    def "Create new cargo"() {
-        setup:
-        to WelcomePage
-        bookingAndRouting.click()
-        at CargoAdministrationPage
+    void bookNewCargo(String originVal, String destinationVal, String arrivalDeadlineVal) {
         bookNewCargoLink.click()
-        at BookNewCargoPage
-        when:
         origin.value(originVal)
         destination.value(destinationVal)
         arrivalDeadline << arrivalDeadlineVal
         book.click()
-        then:
-        at CargoInfoPage
-        where:
-        originVal | destinationVal | arrivalDeadlineVal
-        'DEHAM'   | 'USNYC'        | '1/1/2345'
-        'FIHEL'   | 'DEHAM'        | '1/1/2345'
     }
 
-    def "Route recently created cargo"() {
-        setup:
-        to WelcomePage
-        bookingAndRouting.click()
-        at CargoAdministrationPage
-        bookNewCargoLink.click()
-        at BookNewCargoPage
-        origin.value(originVal)
-        destination.value(destinationVal)
-        arrivalDeadline << arrivalDeadlineVal
-        book.click()
-        at CargoInfoPage
-        when:
+    void routeNewCargo(int routeCandidate) {
         routeThisCargo.click()
-        at RouteNewCargoPage
-        def routeCandidateVal = routeCandidateInfo(routeCandidate)
         assignCargoToRoute(routeCandidate).click()
-        then:
-        at CargoInfoPage
-        removeParentheses(itineraryInfo) == routeCandidateVal
-        where:
-        originVal | destinationVal | arrivalDeadlineVal | routeCandidate
-        'FIHEL'   | 'USNYC'        | '1/1/2345'         | 1
     }
 
-    // todo where is the place for that?
-    def removeParentheses(List<String> list) {
-        list.collect{ it.replaceAll("[\\(\\)]", "") }
-    }
-
-    def setupSpec() {
-        // Runner.main();
-    }
-
-    def cleanupSpec() {
-        // todo need to implement stop server method.
+    boolean assertCargo(boolean routed) {
+        assert caption.contains("Details for cargo")
+        if (routed) {
+            assert itinerary
+        } else {
+            assert routeThisCargo
+        }
+        return true;
     }
 }
