@@ -7,5 +7,6 @@ driver = {
 }
 reportsDir = 'samples/cargo/app/build/reports/integ-test'
 waiting {
+    // seconds
     timeout = 5
 }
