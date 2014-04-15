@@ -1,10 +1,8 @@
 package com.eventor.cargo
+
 import geb.Page
 import geb.spock.GebReportingSpec
 import spock.lang.Shared
-
-import static java.nio.file.Files.copy
-import static java.nio.file.Paths.get
 
 class DDDSampleSpec extends GebReportingSpec {
 
@@ -22,25 +20,25 @@ class DDDSampleSpec extends GebReportingSpec {
 
     def "Cargo info will appear on Cargo Administration page"() {
         when: selectCargo(trackingId)
-        then: assertCargoDetails(true)
+        then: assertRoutedCargoDetails()
         where: trackingId << trackingIds
     }
 
     def "Book and route new cargo on Cargo Administration page"() {
         when: bookNewCargo(origin, destination, arrivalDeadline)
-        then: assertCargoDetails(false)
+        then: assertCargoDetails()
         when: routeNewCargo(1)
-        then: assertCargoDetails(true)
+        then: assertRoutedCargoDetails()
         where: [origin, destination, arrivalDeadline] << [['CNHGH', 'NLRTM', '1/1/2345']]
     }
 
-    def "Events will generate through file"() {
-        setup: copy(get(testFilesPath, file), get(uploadPath, file))
+    def "Change handling history for cargo on Tracking cargo pages"() {
+        setup: uploadFileWith(text)
         Thread.sleep(2000)
         when: trackCargo(trackingIds[0])
         then: assertTrackingCargo(trackingIds[0], currentStatus, misdirected)
-        where: [file, currentStatus, misdirected] <<
-                [['handling_events.csv', 'In port Helsinki', false], ['handling_wrong_event.csv', 'Onboard voyage 0400S', true]]
+        where: [text, currentStatus, misdirected] <<
+                [[events[0], 'In port Helsinki', false], [events[1], 'Onboard voyage 0400S', true]]
     }
 
     def setup() {
@@ -72,7 +70,7 @@ class DDDSampleSpec extends GebReportingSpec {
     }
 
     void routeNewCargo(int routeCandidate) {
-        routeThisCargo.click()
+        routeThisCargoLink.click()
         assignCargoToRoute(routeCandidate).click()
     }
 
@@ -85,22 +83,32 @@ class DDDSampleSpec extends GebReportingSpec {
         return true
     }
 
-    boolean assertCargoDetails(boolean routed) {
+    boolean assertRoutedCargoDetails() {
         assert caption.contains("Details for cargo")
-        if (routed) {
-            assert itinerary
-        } else {
-            assert routeThisCargo
-        }
+        assert itinerary
         return true
+    }
+
+    boolean assertCargoDetails() {
+        assert caption.contains("Details for cargo")
+        assert routeThisCargoLink
+        return true
+    }
+
+    void uploadFileWith(String text) {
+        new File('samples/cargo/upload', 'handling_events.csv').withWriterAppend { w -> w << text }
     }
 
     @Shared
     def trackingIds = ['ABC123', 'JKL567']
-    // todo temporary solve. also, it only works in IdeaJ,
-    // see: http://forums.gradle.org/gradle/topics/static_resource_files_not_found_from_from_test_code_via_gradle
-    def uploadPath = 'samples/cargo/app/integ-test/resources/upload'
-    def testFilesPath = 'samples/cargo/app/integ-test/resources/files'
+    @Shared
+    def ls = System.getProperty("line.separator")
+    @Shared
+    String[] events = ['2009-03-06 12:30	ABC123	0200T	USNYC	LOAD' + ls +
+            '2009-03-08 04:00	ABC123	0200T	USDAL	UNLOAD' + ls +
+            '2009-03-09 08:12	ABC123	0300A	USDAL	LOAD' + ls +
+            '2009-03-12 19:25	ABC123	0300A	FIHEL	UNLOAD',
+            '2009-03-13 12:30	ABC123	0400S	CNHGH	LOAD']
 }
 
 class TrackingCargo extends Page {
@@ -124,7 +132,7 @@ class CargoAdministration extends Page {
         listAllCargoLink { $("a", text: "List all cargos") }
         bookNewCargoLink { $("a", text: "Book new cargo") }
         itinerary { $("tbody")[1].find("tr")*.text() }
-        routeThisCargo { $("a", text: "Route this cargo") }
+        routeThisCargoLink { $("a", text: "Route this cargo") }
         origin { $("select", name: "originUnlocode") }
         destination { $("select", name: "destinationUnlocode") }
         arrivalDeadline { $("input", name: "arrivalDeadline") }
