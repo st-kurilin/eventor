@@ -31,12 +31,12 @@ public class EventorCollections {
         return new HashSet<T>();
     }
 
-    public static <T> Iterable<T> concat(final Iterable<T> a, final Iterable<T> b) {
+    public static <T> Iterable<T> concat(final Iterable<? extends T> a, final Iterable<? extends T> b) {
         return new Iterable<T>() {
             @Override
             public Iterator<T> iterator() {
-                final Iterator<T> ia = a.iterator();
-                final Iterator<T> ib = b.iterator();
+                final Iterator<? extends T> ia = a.iterator();
+                final Iterator<? extends T> ib = b.iterator();
                 return new Iterator<T>() {
                     @Override
                     public boolean hasNext() {
@@ -57,5 +57,16 @@ public class EventorCollections {
                 };
             }
         };
+    }
+
+    public static int size(Iterable<?> inp) {
+        if (inp instanceof Collection) return ((Collection) inp).size();
+        Iterator<?> it = inp.iterator();
+        int res = 0;
+        while (it.hasNext()) {
+            it.next();
+            res++;
+        }
+        return res;
     }
 }

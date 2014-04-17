@@ -42,6 +42,17 @@ class EventListenerSpec extends Specification {
                 'aggregateEventWithSideEffectCaptured': 0]
     }
 
+    def "Event listener consumes childs of events"() {
+        when:
+        eb.publish(new AppleEvt2(), null)
+        Thread.sleep(500)
+        then:
+        instanceCreator.findOrCreateInstanceOf(AppleListener, true).counters == ['simpleEventCaptured': 1,
+                'simpleEventWithSideEffectCaptured': 1,
+                'aggregateEventCaptured': 0,
+                'aggregateEventWithSideEffectCaptured': 0]
+    }
+
     def "Event listener reply simple events without side effect"() {
         when:
         eb.publish(new AppleEvt(), null)
@@ -99,6 +110,8 @@ class CreateApple {}
 class AppleCreated {}
 
 class AppleEvt {}
+
+class AppleEvt2 extends AppleEvt {}
 
 @Aggregate
 class AppleAggregate {

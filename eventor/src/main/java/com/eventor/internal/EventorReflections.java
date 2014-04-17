@@ -123,6 +123,22 @@ public class EventorReflections {
         }
     }
 
+    public static <T> T newInstance(Class<? extends T> cls) {
+        try {
+            Constructor<? extends T> constructor = cls.getDeclaredConstructor();
+            if (!constructor.isAccessible()) constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Collection<?> invoke(Object obj, Method m, Object... arg) {
         try {
             if (!m.isAccessible()) m.setAccessible(true);
@@ -188,59 +204,56 @@ public class EventorReflections {
     public static Iterable<Method> handlerMethods(Class<?> origClass, Class<?> paramClass) {
         Set<Method> res = newSet();
         for (Method each : origClass.getDeclaredMethods()) {
-            if (checkMethodParam(each, paramClass)) {
+            if (isMethodParam(each, paramClass)) {
                 res.add(each);
             }
         }
         return res;
     }
 
-    public static Object wrap(Object obj, Class<?> wrapper) {
+    public static Object wrap(Object obj, Class<?> target) {
         if (obj == null) return null;
-        if (obj.getClass().isAssignableFrom(wrapper)) {
-            return obj;
-        } else {
-            for (Method m : handlerMethods(wrapper, obj.getClass())) {
-                if (m.getReturnType().isAssignableFrom(wrapper) && Modifier.isStatic(m.getModifiers())) {
-                    String name = m.getName();
-                    if (name.equals("valueOf") || name.equals("fromString")) {
-                        Object[] res = invoke(null, m, obj).toArray();
-                        if (res.length != 1) {
-                            throw new RuntimeException(String.format(
-                                    "Fail while wrapping '%s' to '%s' via static '%s' method", obj, wrapper, name));
-                        }
-                        return res[0];
+        if (target.isAssignableFrom(obj.getClass())) return obj;
+        for (Method m : handlerMethods(target, obj.getClass())) {
+            if (m.getReturnType().isAssignableFrom(target) && Modifier.isStatic(m.getModifiers())) {
+                String name = m.getName();
+                if (name.equals("valueOf") || name.equals("fromString")) {
+                    Object[] res = invoke(null, m, obj).toArray();
+                    if (res.length != 1) {
+                        throw new RuntimeException(String.format(
+                                "Fail while wrapping '%s' to '%s' via static '%s' method", obj, target, name));
                     }
+                    return res[0];
                 }
             }
-            for (Constructor c : wrapper.getDeclaredConstructors()) {
-                if (checkConstructorParam(c, obj.getClass())) {
-                    return newInstance(c, obj);
-                }
-            }
-            throw new RuntimeException(String.format("Fail while wrapping '%s' to '%s'", obj, wrapper));
         }
+        for (Constructor c : target.getDeclaredConstructors()) {
+            if (isConstructorParam(c, obj.getClass())) {
+                return newInstance(c, obj);
+            }
+        }
+        throw new RuntimeException(String.format("Fail while wrapping '%s' to '%s'", obj.getClass(), target));
     }
 
-    private static boolean checkMethodParam(Method m, Class<?> paramClass) {
+    private static boolean isMethodParam(Method m, Class<?> paramClass) {
         return m.getParameterTypes().length == 1 && boxPrimitiveType(m.getParameterTypes()[0]).equals(paramClass);
     }
 
-    private static boolean checkConstructorParam(Constructor c, Class<?> paramClass) {
+    private static boolean isConstructorParam(Constructor c, Class<?> paramClass) {
         return c.getParameterTypes().length == 1 &&
                 boxPrimitiveType(c.getParameterTypes()[0]).isAssignableFrom(paramClass);
     }
 
     private static Class<?> boxPrimitiveType(Class<?> clazz) {
-        return primitiveTypes.containsKey(clazz) ? primitiveTypes.get(clazz) : clazz;
+        return PRIMITIVE_TYPE_UNBOXED.containsKey(clazz) ? PRIMITIVE_TYPE_UNBOXED.get(clazz) : clazz;
     }
 
-    private static Map<Class<?>, Class<?>> primitiveTypes = newMap();
+    private static Map<Class<?>, Class<?>> PRIMITIVE_TYPE_UNBOXED = newMap();
 
     static {
-        primitiveTypes.put(byte.class, Byte.class);
-        primitiveTypes.put(short.class, Short.class);
-        primitiveTypes.put(int.class, Integer.class);
-        primitiveTypes.put(long.class, Long.class);
+        PRIMITIVE_TYPE_UNBOXED.put(byte.class, Byte.class);
+        PRIMITIVE_TYPE_UNBOXED.put(short.class, Short.class);
+        PRIMITIVE_TYPE_UNBOXED.put(int.class, Integer.class);
+        PRIMITIVE_TYPE_UNBOXED.put(long.class, Long.class);
     }
 }

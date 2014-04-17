@@ -50,6 +50,10 @@ public class Eventor implements CommandBus {
         this.commandBus = createCommandBus();
     }
 
+    public AggregateRepository getRepository() {
+        return repository;
+    }
+
     public void replyEventsForAllViews() {
         for (Object eachEvent : eventStorage.getAll()) {
             for (MetaSubscriber eachEl : info.subscribers) {
@@ -105,7 +109,7 @@ public class Eventor implements CommandBus {
             public void publish(Object event, Object source) {
                 log.info("Published to bus {}", event);
                 eventStorage.fired(event, source);
-                router.invoke(event, null);
+                router.invoke(new EventAndSource(event, source), null);
             }
         };
     }
@@ -175,7 +179,7 @@ public class Eventor implements CommandBus {
 
     private void handleEventByEvenListener(MetaSubscriber eventListener, Object event, boolean replyMode) {
         for (MetaHandler eachMetaHandler : eventListener.eventHandlers) {
-            if ((!replyMode || eachMetaHandler.replyable) && eachMetaHandler.expected.equals(event.getClass())) {
+            if ((!replyMode || eachMetaHandler.replyable) && eachMetaHandler.expected.isAssignableFrom(event.getClass())) {
                 Object l = instanceCreator.findOrCreateInstanceOf(eventListener.origClass, true);
                 eachMetaHandler.execute(l, event);
             }
@@ -207,12 +211,24 @@ public class Eventor implements CommandBus {
         }
     }
 
-    private void handleEventByAggregate(final MetaAggregate eachMetaAggregate, final Object event) {
-        for (MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
-            if (eachMetaHandler.expected.equals(event.getClass())) {
-                log.debug("Event {} will be handled by instances of {}", event, eachMetaAggregate.origClass);
-                if (eachMetaHandler.alwaysStart) {
+    private void handleEventByAggregate(final MetaAggregate eachMetaAggregate, final EventAndSource eventAndSource) {
+        Object event = eventAndSource.event;
+        if (eventAndSource.source == null) {
+            for (MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
+                if (eachMetaHandler.alwaysStart && eachMetaHandler.match(event.getClass())) {
+                    log.debug("Event {} will be handled by instances of {}", event, eachMetaAggregate.origClass);
                     Object aggregate = instanceCreator.findOrCreateInstanceOf(eachMetaAggregate.origClass, false);
+                    handleEventByAggregate(aggregate, eachMetaHandler, event);
+                    Object aggregateId =
+                            saveAggregate(eachMetaAggregate, aggregate, event);
+                    eventStorage.fired(event, aggregateId);
+                }
+            }
+        } else {
+            for (MetaHandler eachMetaHandler : eachMetaAggregate.eventHandlers) {
+                if (eachMetaHandler.match(event.getClass())) {
+                    Object aggregate = assumeNotNull(repository.getById(eachMetaAggregate.origClass, eventAndSource.source), "Could not find aggregate %s by id [%s]",
+                            eachMetaAggregate.origClass, eventAndSource.source);
                     handleEventByAggregate(aggregate, eachMetaHandler, event);
                     saveAggregate(eachMetaAggregate, aggregate, event);
                 }
@@ -220,11 +236,12 @@ public class Eventor implements CommandBus {
         }
     }
 
-    private void saveAggregate(MetaAggregate eachMetaAggregate, Object aggregate, Object message) {
+    private Object saveAggregate(MetaAggregate eachMetaAggregate, Object aggregate, Object message) {
         Object id = eachMetaAggregate.retrieveId(aggregate);
         assumeNotNull(id, "Aggregate id could not be null");
         repository.save(id, aggregate);
         log.info("Aggregate with id {} registered", id);
+        return id;
     }
 
     private void handleEventByAggregate(Object aggregate, MetaHandler eachMetaHandler, Object event) {
@@ -326,7 +343,8 @@ public class Eventor implements CommandBus {
     private Listener eventListenerAsListener(final MetaSubscriber each) {
         return new Listener() {
             @Override
-            public void apply(Object event) {
+            public void apply(Object eventAndSource) {
+                Object event = ((EventAndSource) eventAndSource).event;
                 log.info("Event {} will be handled by event listener {}", event, each.origClass.getSimpleName());
                 handleEventByEvenListener(each, event, false);
             }
@@ -336,9 +354,10 @@ public class Eventor implements CommandBus {
     private Listener aggregateAsListener(final MetaAggregate eachMetaAggregate) {
         return new Listener() {
             @Override
-            public void apply(Object event) {
+            public void apply(Object eventAndSource) {
+                Object event = ((EventAndSource) eventAndSource).event;
                 log.info("Event {} will be handled by aggregates", event);
-                handleEventByAggregate(eachMetaAggregate, event);
+                handleEventByAggregate(eachMetaAggregate, (EventAndSource) eventAndSource);
             }
         };
     }
@@ -346,7 +365,8 @@ public class Eventor implements CommandBus {
     private Listener sagaAsListener(final MetaSaga eachMetaSaga) {
         return new Listener() {
             @Override
-            public void apply(Object event) {
+            public void apply(Object eventAndSource) {
+                Object event = ((EventAndSource) eventAndSource).event;
                 log.info("Event {} will be handled by sagas", event);
                 handleEventBySaga(eachMetaSaga, event);
             }
@@ -360,5 +380,15 @@ public class Eventor implements CommandBus {
 
     public EventBus getEventBus() {
         return eventBus;
+    }
+
+    private static class EventAndSource {
+        Object event;
+        Object source;
+
+        private EventAndSource(Object event, Object source) {
+            this.event = event;
+            this.source = source;
+        }
     }
 }

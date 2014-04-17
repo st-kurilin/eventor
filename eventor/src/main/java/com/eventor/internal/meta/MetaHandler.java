@@ -9,6 +9,7 @@ import static com.eventor.internal.EventorReflections.invoke;
 
 public class MetaHandler {
     public final Method target;
+    @Deprecated //use match()
     public final Class<?> expected;
     public final String dispatchField;
     public final boolean alwaysFinish;
@@ -34,5 +35,9 @@ public class MetaHandler {
     public Object extractId(Object obj) {
         if (idField == null) return null;
         return EventorReflections.retrieveNamedValue(obj, idField);
+    }
+
+    public boolean match(Class<?> actual) {
+        return expected.isAssignableFrom(actual);
     }
 }
