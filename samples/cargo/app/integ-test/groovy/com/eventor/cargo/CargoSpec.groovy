@@ -10,6 +10,7 @@ class CargoSpec extends GebReportingSpec {
 
     static def SOME_DESTINATION = 1
     static def ANOTHER_DESTINATION = 2
+    static def YET_ANOTHER_DESTINATION = 3
     static def NEXT_MONTH = use(TimeCategory) {
         new Date() + 1.month
     }
@@ -30,6 +31,24 @@ class CargoSpec extends GebReportingSpec {
         assertCargoBooked(cargoBooked)
     }
 
+    def "User should be able to change destination"() {
+        setup:
+        def cargoBooked = book(DEFAULT_CARGO)
+        when:
+        cargoBooked.destination = changeDestination(cargoBooked.trackingId, YET_ANOTHER_DESTINATION)
+        then:
+        assertCargoBooked(cargoBooked)
+    }
+
+    def "User should not be able to change destination to origin"() {
+        setup:
+        def cargoBooked = book(origin: SOME_DESTINATION)
+        when:
+        changeDestination(cargoBooked.trackingId, SOME_DESTINATION)
+        then:
+        title.contains("Error")
+    }
+
     def book(newCargo) {
         to BookNewCargoPage
         def cargoInfo = [:]
@@ -47,6 +66,14 @@ class CargoSpec extends GebReportingSpec {
     def getParamVal(param = 'trackingId') {
         def builder = new URIBuilder(driver.currentUrl)
         return builder.query != null ? builder.query.get(param) : null
+    }
+
+    def changeDestination(trackingId, newDestinationNumber) {
+        to ChangeDestinationPage, trackingId: trackingId
+        def newDestinationValue = newDestinationValue(newDestinationNumber)
+        newDestination.value(newDestinationValue)
+        changeDestinationBtn.click()
+        return newDestinationValue
     }
 
     def assertCargoBooked(cargoBooked) {
@@ -114,5 +141,15 @@ class CargoRow extends Module {
         origin { cell(1).text() }
         destination { cell(2).text() }
         routed { cell(3).text() }
+    }
+}
+
+class ChangeDestinationPage extends Page {
+    static url = "dddsample/admin/pickNewDestination.html"
+    static at = { $("caption")[0].text().contains("Change destination for cargo") }
+    static content = {
+        newDestination { $("select", name: "unlocode") }
+        newDestinationValue { i -> newDestination.children()*.value()[i - 1] }
+        changeDestinationBtn { $($("input", value: "Change destination")) }
     }
 }
