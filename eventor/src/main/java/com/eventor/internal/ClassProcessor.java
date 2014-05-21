@@ -58,6 +58,7 @@ public class ClassProcessor {
     }
 
     private MetaAggregate handleAggregate(Class<?> aggregateClass) {
+        validateStartAnnotation(aggregateClass);
         Map<Class<? extends Annotation>, Iterable<Method>> annotated =
                 EventorReflections.getMethodsAnnotated(aggregateClass, CommandHandler.class, EventListener.class);
         return new MetaAggregate(aggregateClass,
@@ -67,6 +68,7 @@ public class ClassProcessor {
     }
 
     private MetaSaga handleSaga(Class<?> sagaClass) {
+        validateStartAnnotation(sagaClass);
         Map<Class<? extends Annotation>, Iterable<Method>> annotated =
                 EventorReflections.getMethodsAnnotated(sagaClass, EventListener.class, CommandHandler.class);
         return new MetaSaga(sagaClass,
@@ -102,5 +104,11 @@ public class ClassProcessor {
 
     private Class<?> extractIdType(Class<?> clazz) {
         return EventorReflections.retrieveTypeOfAnnotatedValue(clazz, Id.class);
+    }
+
+    private void validateStartAnnotation(Class<?> clazz) {
+        Iterable<Method> annotated = EventorReflections.getMethodsAnnotated(clazz, Start.class).get(Start.class);
+        EventorPreconditions.assume(EventorCollections.size(annotated) != 0,
+                "%s class should have 'Start' annotation", clazz);
     }
 }
